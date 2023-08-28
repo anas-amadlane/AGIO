@@ -1,0 +1,58 @@
+        CALCUL TICKET AGIOS SGMB        1er trimestre
+
+Nbres Débiteurs
+                Janvier         Feverier        Mars
+Autorisé        310000000.0     280000000.0     310000000.0
+Dépassement     88400744.2      131816866.5     110997199.4
+Tt.Nb Déb       398400744.3     411816866.5     420997199.4
+
+Int sur Nbres Débiteurs
+                Janvier         Feverier        Mars
+Autorisé        38750.0         35000.0         38750.0
+Dépassement     18416.8         27461.8         23124.4
+Tt.Nb Déb       57166.8         62461.8         61874.4
+
+Intérêts calculés                               181503.1
+Intérêts Débités                                20
+Différence                                      20
+Taux Moyenne Appliqué                           5.31%
+
+15 * 4
+
+
+[0,1-2]  CALCUL TICKET AGIOS SGMB 1er trimestre
+[1,1]
+[2,1-2]  Nbres Débiteurs
+[3,1]
+[4,1]                   [4,2] Janvier          [4,3] Feverier         [4,4] Mars
+[5,1]  Autorisé         [5,2] 310000000.0      [5,3] 280000000.0      [5,4] 310000000.0
+[6,1]  Dépassement      [6,2] 88400744.2       [6,3] 131816866.5      [6,4] 110997199.4
+[7,1]  Tt.Nb Déb        [7,2] 398400744.3      [7,3] 411816866.5      [7,4] 420997199.4
+[8,1]
+[9,1-2]  Int sur Nbres Débiteurs
+[10,1]
+[11,1]                  [11,2] Janvier         [11,3] Feverier        [11,4] Mars
+[12,1] Autorisé         [12,2] 38750.0         [12,3] 35000.0         [12,4] 38750.0
+[13,1] Dépassement      [13,2] 18416.8         [13,3] 27461.8         [13,4] 23124.4
+[14,1] Tt.Nb Déb        [14,2] 57166.8         [14,3] 62461.8         [14,4] 61874.4
+[15,1]
+[16,1] Intérêts calculés                       [16,2] 181503.1
+[17,1] Intérêts Débités                        [17,2] 20
+[18,1] Différence                              [18,2] 20
+[19,1] Taux Moyenne Appliqué                   [19,2] 5.31%
+
+
+Nbres Débiteurs
+Autorisé
+Dépassement
+Total Nb_Déb
+Intérêt /Nb_Déb
+Autorisé
+Dépassement
+Total Intérêt
+Intérêts calculés
+Intérêts Débités
+Différence
+Taux Moyenne
+
+

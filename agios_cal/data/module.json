@@ -1,0 +1,389 @@
+{
+   "BP": {
+      "head": [
+         "Date opération",
+         "Date valeur",
+         "Libellé",
+         "Réf",
+         "Débit (DH)",
+         "Crédit (DH)",
+         "Solde (DH)"
+      ],
+      "d_head": [
+         [
+            0,
+            "Date opération"
+         ],
+         [
+            1,
+            "Date valeur"
+         ],
+         [
+            4,
+            "Débit (DH)"
+         ],
+         [
+            5,
+            "Crédit (DH)"
+         ]
+      ],
+      "Solde": -54531753.960000001,
+      "line": [
+         "2023-01-01",
+         "2123-12-31",
+         50000000.0
+      ],
+      "tx_reg": [
+         "2023-01-01",
+         "2123-12-31",
+         5.4500000000000002
+      ],
+      "tx_pla": [
+         "2023-01-01",
+         "2123-12-31",
+         5.4500000000000002
+      ],
+      "sk_be": 6,
+      "sk_af": 3,
+      "Month": 2,
+      "year": 2023
+   },
+   "CDM": {
+      "head": [
+         "DATE OPERATION",
+         "DATE VALEUR",
+         "LIBELLE OPERATION",
+         "Statut",
+         "DEBIT",
+         "CREDIT"
+      ],
+      "d_head": [
+         [
+            1,
+            "DATE OPERATION"
+         ],
+         [
+            2,
+            "DATE VALEUR"
+         ],
+         [
+            5,
+            "DEBIT"
+         ],
+         [
+            6,
+            "CREDIT"
+         ]
+      ],
+      "Solde": 0,
+      "line": [
+         "2023-01-01",
+         "2123-12-31",
+         10000000
+      ],
+      "tx_reg": [
+         "2023-01-01",
+         "2123-12-31",
+         5.5
+      ],
+      "tx_pla": [
+         "2023-01-01",
+         "2123-12-31",
+         7.5
+      ],
+      "sk_be": 1,
+      "sk_af": 1,
+      "Month": 1,
+      "year": 2023
+   },
+   "BMCE": {
+      "head": [
+         "Date",
+         "Date de valeur",
+         "Libellé",
+         "Débit",
+         "Crédit",
+         "Solde"
+      ],
+      "d_head": [
+         [
+            0,
+            "Date"
+         ],
+         [
+            1,
+            "Date de valeur"
+         ],
+         [
+            3,
+            "Débit"
+         ],
+         [
+            4,
+            "Crédit"
+         ]
+      ],
+      "Solde": -10772992.039999999,
+      "line": [
+         "2023-01-01",
+         "2123-12-31",
+         10000000.0
+      ],
+      "tx_reg": [
+         "2023-01-01",
+         "2123-12-31",
+         5.5
+      ],
+      "tx_pla": [
+         "2023-01-01",
+         "2123-12-31",
+         7.5
+      ],
+      "sk_be": 0,
+      "sk_af": 0,
+      "Month": 1,
+      "year": 2023
+   },
+   "SGMB": {
+      "head": [
+         "Compte",
+         "Date d'opération",
+         "Date de valeur",
+         "Opération",
+         "Details de l'opération",
+         "Débit",
+         "Crédit",
+         "Devise"
+      ],
+      "d_head": [
+         [
+            1,
+            "Date d'opération"
+         ],
+         [
+            2,
+            "Date de valeur"
+         ],
+         [
+            5,
+            "Débit"
+         ],
+         [
+            6,
+            "Crédit"
+         ]
+      ],
+      "Solde": -13301209.84,
+      "line": [
+         "2023-01-01",
+         "2123-12-31",
+         10000000.0
+      ],
+      "tx_reg": [
+         "2023-01-01",
+         "2123-12-31",
+         4.5
+      ],
+      "tx_pla": [
+         "2023-01-01",
+         "2123-12-31",
+         7.5
+      ],
+      "sk_be": 0,
+      "sk_af": 0,
+      "Month": 1,
+      "year": 2023
+   },
+   "AWB": {
+      "head": [
+         "Date",
+         "Valeur",
+         "Libellé d'opération",
+         "Débit",
+         "Crédit"
+      ],
+      "d_head": [
+         [
+            0,
+            "Date"
+         ],
+         [
+            1,
+            "Valeur"
+         ],
+         [
+            3,
+            "Débit"
+         ],
+         [
+            4,
+            "Crédit"
+         ]
+      ],
+      "Solde": 0,
+      "line": [
+         "2023-01-01",
+         "2123-12-31",
+         10000000
+      ],
+      "tx_reg": [
+         "2023-01-01",
+         "2123-12-31",
+         5.3499999999999996
+      ],
+      "tx_pla": [
+         "2023-01-01",
+         "2123-12-31",
+         7.3499999999999996
+      ],
+      "sk_be": 3,
+      "sk_af": 0,
+      "Month": 1,
+      "year": 2023
+   },
+   "CIH": {
+      "head": [
+         "DT opération",
+         "DT valeur",
+         "Libellé large",
+         "Référence",
+         "Débit",
+         "Crédit"
+      ],
+      "d_head": [
+         [
+            1,
+            "DT opération"
+         ],
+         [
+            6,
+            "DT valeur"
+         ],
+         [
+            23,
+            "Débit"
+         ],
+         [
+            28,
+            "Crédit"
+         ]
+      ],
+      "Solde": 0,
+      "line": [
+         "2023-01-01",
+         "2123-12-31",
+         15000000
+      ],
+      "tx_reg": [
+         "2023-01-01",
+         "2123-12-31",
+         5.0
+      ],
+      "tx_pla": [
+         "2023-01-01",
+         "2123-12-31",
+         5.0
+      ],
+      "sk_be": 24,
+      "sk_af": 4,
+      "Month": 1,
+      "year": 2023
+   },
+   "BMCI": {
+      "head": [
+         "Datecomptable",
+         "Datevaleur",
+         "Description",
+         "Type",
+         "Montant",
+         "Solde"
+      ],
+      "d_head": [
+         [
+            0,
+            "Datecomptable"
+         ],
+         [
+            1,
+            "Datevaleur"
+         ],
+         [
+            4,
+            "Montant"
+         ]
+      ],
+      "Solde": 0,
+      "line": [
+         "2023-01-01",
+         "2123-12-31",
+         0
+      ],
+      "tx_reg": [
+         "2023-01-01",
+         "2123-12-31",
+         0.0
+      ],
+      "tx_pla": [
+         "2023-01-01",
+         "2123-12-31",
+         0.0
+      ],
+      "sk_be": 9,
+      "sk_af": 1,
+      "Month": 1,
+      "year": 2023
+   },
+   "ARB": {
+      "head": [
+         "Date de la transaction",
+         "Date de paiement",
+         "NARRATIF",
+         "Référence de la transaction",
+         "Vous avez séléctionné Montant de Débit",
+         "Crédit",
+         "Solde en cours",
+         "Code de transaction",
+         "Description Code de transaction",
+         "Détails du paiement",
+         "Référence client"
+      ],
+      "d_head": [
+         [
+            1,
+            "Date de la transaction"
+         ],
+         [
+            2,
+            "Date de paiement"
+         ],
+         [
+            5,
+            "Vous avez séléctionné Montant de Débit"
+         ],
+         [
+            6,
+            "Crédit"
+         ]
+      ],
+      "Solde": 0,
+      "line": [
+         "2023-01-01",
+         "2123-12-31",
+         0
+      ],
+      "tx_reg": [
+         "2023-01-01",
+         "2123-12-31",
+         0.0
+      ],
+      "tx_pla": [
+         "2023-01-01",
+         "2123-12-31",
+         0.0
+      ],
+      "sk_be": 5,
+      "sk_af": 0,
+      "Month": 1,
+      "year": 2023
+   }
+}
