@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <jansson.h>
 #include <xlsxio_read.h>
-#include <libft.h>
+// #include <libft.h>
 #include <string.h>
 #include <sqlite3.h>
 #define MAX_ALLOC 5000
@@ -179,7 +179,7 @@ int	date_conv(char **s)
 	rt = (char *)malloc(sizeof(char) * 11);
 	if (!rt)
 		return 1;
-	unixDate = (ft_atoi(*s) - 25569) * 86400;
+	unixDate = (atoi(*s) - 25569) * 86400;
 	rawTime = (time_t)unixDate;
 	timeInfo = gmtime(&rawTime);
 	sprintf(rt, "%04u-%02u-%02u", timeInfo->tm_year + 1900, timeInfo->tm_mon + 1, timeInfo->tm_mday);

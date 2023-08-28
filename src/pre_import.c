@@ -13,7 +13,7 @@ typedef struct	s_date {
 
 typedef struct s_envlop
 {
-    char	wd[100];
+    char	wd[200];
 	char	db_path[200];
     char    *bq;
     t_date	date;
@@ -24,6 +24,11 @@ typedef struct s_envlop
 int	json_writerr(char *file, char *bq, t_date *date);
 // extern const char    *wd;
 // const char    *wd;
+
+static void bzeros(void * s, size_t n)
+{
+        memset(s, 0, n);
+}
 
 static int check_table(char *db_path, char *table, char *bq)
 {
@@ -37,7 +42,7 @@ static int check_table(char *db_path, char *table, char *bq)
         return -1;
     rt = 2;
 	if (!sqlite3_open(db_path, &db)) {
-        bzero(buff, 200);
+        bzeros(buff, 200);
         snprintf(buff, 200, "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%s_%s';", table, bq);
         rs = sqlite3_prepare_v2(db, buff, -1, &selectstmt, NULL);
         if (rs == SQLITE_OK) {
@@ -65,7 +70,7 @@ int check_balance(char *db_path, char *bq)
         return -1;
     rt = 2;
 	if (!sqlite3_open(db_path, &db)) {
-        bzero(buff, 200);
+        bzeros(buff, 200);
         snprintf(buff, 200, "SELECT * FROM BQ_SPEC WHERE BQ='%s';", bq);
         rs = sqlite3_prepare_v2(db, buff, -1, &selectstmt, NULL);
         if (rs == SQLITE_OK) {
@@ -96,7 +101,7 @@ int insert_balance(char *db_path, char *bq, double value)
         return -1;
     rt = 2;
 	if (!sqlite3_open(db_path, &db)) {
-        bzero(buff, 200);
+        bzeros(buff, 200);
         snprintf(buff, 200, "DELETE FROM BQ_SPEC WHERE BQ='%s'; INSERT INTO BQ_SPEC VALUES('%s', %f);", bq, bq, value);
         if (sqlite3_exec(db, buff, NULL, NULL, NULL) == SQLITE_OK)
             rt = 0;
@@ -118,7 +123,7 @@ int create_table(t_envlop *envlop, char *table, double value) {
         return -1;
     rt = 2;
     if (!sqlite3_open(envlop->db_path, &db)) {
-        bzero(buff, 200);
+        bzeros(buff, 200);
         snprintf(buff, 200, "DROP TABLE IF EXISTS %s_%s; CREATE TABLE IF NOT EXISTS %s_%s(SDATE DATE, EDATE DATE, TAUX DECIMAL);", table, envlop->bq, table, envlop->bq);
         if(sqlite3_exec(db, buff, NULL, NULL, NULL) == SQLITE_OK) {
             //printf("%4d-%d-%d\n", envlop->date.y, envlop->date.m, envlop->date.d);
@@ -173,7 +178,7 @@ int creater(t_envlop *envlop, double *value) {
 //     int     value[3];
 
 //     wd = "/home/anas/clones/agios_cal/";
-//     bzero(path, 200);
+//     bzeros(path, 200);
 //     (strcat(path, wd), strcat(path, "agio.db"));
 //     envlop.db_path = path;
 //     envlop.bq = "BMCE";
@@ -186,7 +191,7 @@ int creater(t_envlop *envlop, double *value) {
 //     if (checker(&envlop) == 1) {
 //         printf("passed\n");
 //         creater(&envlop, 2000, value);
-//         bzero(path, 200);
+//         bzeros(path, 200);
 //         (strcat(path, wd), strcat(path, "data/module_tmp.json"));
 //         json_writer(path, envlop.bq, &envlop.date);
 //     }

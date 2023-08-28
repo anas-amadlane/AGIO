@@ -6,7 +6,7 @@
 #include <sqlite3.h>
 #include <jansson.h>
 #include <xlsxio_read.h>
-#include <libft.h>
+// #include <libft.h>
 
 #ifdef  IMPORT_GUI_C
 #define APPNAME 5
@@ -66,7 +66,7 @@ typedef struct  s_rel
 // const char *wd = "/home/anas/clones/agios_cal/";
 t_rel	*jsonparser(char *file, char *bq);
 int	import_file(char *wd, t_var *vars);
-int init_export(t_var *vars, char *trim);
+int init_export(t_var *vars, char *trim, char *wd);
 // int json_writer(char *bq, char *wd, int m, int y);
 void	free_relve(t_rel *releve);
 #endif

@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <jansson.h>
 #include <xlsxio_read.h>
-#include <libft.h>
+// #include <libft.h>
 #include <string.h>
 #include <sqlite3.h>
 #include <stdlib.h>
@@ -25,19 +25,27 @@ typedef struct	s_date {
 	int	y;
 }	t_date;
 
-typedef struct s_envlop
-{
-    char	wd[100];
-	char    *db_path;
-    char    *bq;
-    t_date	date;
-}   t_envlop;
+// typedef struct s_envlop
+// {
+//     char	wd[200];
+// 	char	db_path[200];
+//     char    *bq;
+//     t_date	date;
+// }   t_envlop;
+
+// typedef struct s_envlop
+// {
+//     char	wd[100];
+// 	char    *db_path;
+//     char    *bq;
+//     t_date	date;
+// }   t_envlop;
 
 int tableExists1 = 0;
-int init_export(t_var *vars, char *trim);
+int init_export(t_var *vars, char *trim, char *wd);
 int get_trim(sqlite3 *db, t_var *vars, char *trim);
 
-extern  t_envlop envlop;
+// extern  t_envlop envlop;
 // extern const char    *wd;
 //wd = "/home/anas/clones/agios_cal/";
 
@@ -63,16 +71,16 @@ char *trim_conv(t_var *vars, char *buff, char *s1) {
     return(buff);
 }
 
-static int init_db(sqlite3	*db, t_var *vars, char *trim)
+static int init_db(sqlite3	*db, t_var *vars, char *trim, char *wd)
 {
 	char	buff[200];
     char    path[200];
     int     rc;
 
-    if (!envlop.wd)
+    if (!wd)
         return -1;
     path[0] = '\0';
-    strcat(path, envlop.wd);
+    strcat(path, wd);
     strcat(path, "agio.db");
 	if (!sqlite3_open(path, &db))
 	{
@@ -94,12 +102,12 @@ static int init_db(sqlite3	*db, t_var *vars, char *trim)
 	return 0;
 }
 
-int init_export(t_var *vars, char *trim) {
+int init_export(t_var *vars, char *trim, char *wd) {
     sqlite3 *db;
 
     int r;
       db = NULL;
-	r = init_db(db, vars, trim);
+	r = init_db(db, vars, trim, wd);
     if (r == -1)
         return 1;
     else

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <jansson.h>
 #include <xlsxio_read.h>
-#include <libft.h>
+// #include <libft.h>
 #include <string.h>
 #include <sqlite3.h>
 #include <stdlib.h>
@@ -52,7 +52,7 @@ typedef struct	s_date {
 
 typedef struct s_envlop
 {
-    char	wd[100];
+    char	wd[200];
 	char	db_path[200];
     char    *bq;
     t_date	date;

@@ -1,6 +1,7 @@
 #define IMPORT_GUI_C
-#include <agios.h>
-
+#include <strings.h>
+#include <string.h>
+#include "../inc/agios.h"
 typedef struct	s_date {
     int d;
 	int	m;
@@ -9,13 +10,18 @@ typedef struct	s_date {
 
 typedef struct s_envlop
 {
-    char	wd[100];
+    char	wd[200];
 	char	db_path[200];
     char    *bq;
     t_date	date;
 }   t_envlop;
 
 t_date date;
+
+static void bzeros(void * s, size_t n)
+{
+        memset(s, 0, n);
+}
 
 int	json_writer(char *file, char *bq, t_date *date) {
     int				rt;
@@ -90,7 +96,7 @@ t_prov provider;
 
 void set_widget_color(const char *color) {
 	char	css[100];
-	bzero(css, 100);
+	bzeros(css, 100);
 
 	snprintf(css, 100, "button { background-color: %s; }", color);
     GtkStyleContext *context = gtk_widget_get_style_context(provider.button);
@@ -172,7 +178,7 @@ static void	sidebar_part(GtkWidget *box) {
 	GtkWidget	*footer_label;
 	char		path[200];
 
-	bzero(path, 200);
+	bzeros(path, 200);
     (strcat(path, envlop.wd), strcat(path, "data/logo/logo.png"));
 	sidebar = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_widget_set_name(sidebar, "sidebar");
@@ -237,12 +243,12 @@ static void	save_clicked(GtkComboBox *combo_box, gpointer user_data) {
 		selectedBq = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(bq_combo));
 		if (!selectedBq)
 			return;
-		// bzero(path, 200);
+		// bzeros(path, 200);
     	// (strcat(path, envlop.wd), strcat(path, "agio.db"));
     	// envlop.db_path = path;
     	envlop.bq = (char *)selectedBq;
 		creater(&envlop, value);
-		bzero(path, 200);
+		bzeros(path, 200);
 		(strcat(path, envlop.wd), strcat(path, "data/module_tmp.json"));
         json_writer(path, envlop.bq, &envlop.date);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(bq_spin_button[0]), 0);
@@ -373,7 +379,7 @@ static void	on_combo_changed(GtkComboBox *combo_box, gpointer user_data) {
 	selectedBq = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(bq_combo));
 	if (!selectedBq)
 		return;
-    // bzero(path, 200);
+    // bzeros(path, 200);
     // (strcat(path, envlop.wd), strcat(path, "agio.db"));
     // envlop.db_path = path;
     envlop.bq = (char *)selectedBq;
@@ -389,7 +395,7 @@ static void	on_combo_changed(GtkComboBox *combo_box, gpointer user_data) {
 		gtk_widget_show(bq_spec_frame);
     }
 	else {
-		bzero(path, 200);
+		bzeros(path, 200);
 		(strcat(path, envlop.wd), strcat(path, "data/module_tmp.json"));
 		json_reader(path, selectedBq, &envlop.date);
 		// releve = jsonparser("/home/anas/clones/agios_cal/data/module.json", (char *)selectedBq);
@@ -416,10 +422,10 @@ static void	on_cloture_clicked(GtkButton *button, gpointer user_data) {
 	if (!selectedBq)
 		return ;
 	value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(user_data));
-	(bzero(path, 200), strcat(path, envlop.wd), strcat(path, "data/module_tmp.json"));
+	(bzeros(path, 200), strcat(path, envlop.wd), strcat(path, "data/module_tmp.json"));
 	if (!sqlite3_open(envlop.db_path, &db))
 	{
-		bzero(buff, 200);
+		bzeros(buff, 200);
 		if (envlop.date.m < 12) {
 			if (envlop.date.m < 10)
 				snprintf(buff, 200, "select balance from CONC_OP_%s_%d where S_DATE = date('%d-0%d-01', '-1 day');", selectedBq, envlop.date.y, envlop.date.y, envlop.date.m+1);
@@ -436,7 +442,7 @@ static void	on_cloture_clicked(GtkButton *button, gpointer user_data) {
 				if (envlop.date.m < 12)
 					envlop.date.m += 1;
 				else {
-					bzero(buff, 200);
+					bzeros(buff, 200);
 					snprintf(buff, 200, "UPDATE BQ_SPEC SET SOLDE = (SELECT BALANCE FROM CONC_OP_%s_%d WHERE S_date = '%d-12-31') WHERE BQ = '%s';", selectedBq, envlop.date.y, envlop.date.y, selectedBq);
 					sqlite3_exec(db, buff, NULL, NULL, NULL);
 					(envlop.date.m = 1, envlop.date.y += 1);
@@ -571,7 +577,7 @@ static void	on_export_clicked(GtkWidget *widget, gpointer data) {
 		vars.bq = (char *)selectedBq;
 		vars.year = atoi((char *)selectedYear);
 		trim = (char *)selectedtrim;
-		init_export(&vars, trim);
+		init_export(&vars, trim, envlop.wd);
 		g_free(vars.file);
 		g_free(selectedYear);
 		g_free(vars.bq);
@@ -914,7 +920,7 @@ static void	on_mod_clicked(GtkButton *button, gpointer user_data) {
 	else
 		mod_val = "LINE";
 	value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(user_data));
-	bzero(buff, 500);
+	bzeros(buff, 500);
 	if (!sqlite3_open(envlop.db_path, &db))
 	{
 
@@ -1028,9 +1034,9 @@ int	main(int argc, char	**argv)
 	GtkWidget	*window;
 	GtkWidget	*box;
 
-	bzero(envlop.wd, 100);
+	bzeros(envlop.wd, 100);
 	strncpy(envlop.wd, argv[0], strlen(argv[0]) - APPNAME);
-	bzero(envlop.db_path, 200);
+	bzeros(envlop.db_path, 200);
     (strncpy(envlop.db_path, envlop.wd, strlen(envlop.wd)), strcat(envlop.db_path, "agio.db"));
 	// strncpy(wd, argv[0], strlen(argv[0]) - APPNAME);
 	gtk_init(&argc, &argv);

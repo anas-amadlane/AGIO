@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <jansson.h>
 #include <xlsxio_read.h>
-#include <libft.h>
+// #include <libft.h>
 #include <string.h>
 #include <sqlite3.h>
 //#define MAX_ALLOC 5000
@@ -83,6 +83,10 @@ typedef struct		s_tab
 int	query_holder(char **query, char *s);
 int init_db(const char *tab, const char *qu2, t_var *vars);//, t_rel *rel);
 t_rel	*jsonparser(char *file, char *bq);
+static void bzeros(void * s, size_t n)
+{
+        memset(s, 0, n);
+}
 
 // Checkers
 int iswhitespace(char c) {
@@ -151,7 +155,7 @@ int pars_date(const char *s, char *ns) {
 
     if (!s || !ns)
         return 1;
-    bzero(ns, 11);
+    bzeros(ns, 11);
     if (isallnum(s)) {
         i = -1;
         while (s[++i]) {
@@ -190,7 +194,7 @@ int pars_mnt(const char *s, char *ns) {
     if (!s || !ns)
         return 1;
     (i = -1, j = 0);
-    bzero(ns, 100);
+    bzeros(ns, 100);
     if (!is_empty(s)) {
         (ns[0] = '0', ns[1] = '\0');
     }
@@ -283,7 +287,7 @@ int get_rows(xlsxioreadersheet sheet, char **query, int *index, char *table) {
 
     if (!sheet || !query || !index || !table)
         return 1;
-    bzero(buff, 100);
+    bzeros(buff, 100);
 	*query = NULL;
     snprintf(buff, 100, I_QUE, table);
     if (query_holder(query, buff))
