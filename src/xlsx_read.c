@@ -1,20 +1,10 @@
 #include <stdio.h>
-#include <jansson.h>
 #include <xlsxio_read.h>
-// #include <libft.h>
 #include <string.h>
-#include <sqlite3.h>
-//#define MAX_ALLOC 5000
-//#define C_QUE "DROP TABLE IF EXISTS %s CREATE TABLE %s (DATE_OP DATE, DEBIT BIGINT, CREDIT BIGINT);"
-//#define I_QUE "insert into %s values(\'"
 
 #define MAX_ALLOC 10000
-#define HEADER {{"Date d'opération", "Date opération", "Date Opération", "DATE OPERATION", "Date de la transaction", "Date comptable", "DT opération", "Date opérati", "DATE OPER", "DATE", "Date", NULL}, {"Débit (DH)", "Débit", "DEBIT", " Montant débit", "Montant débit", "debit", "débit", "Vous avez séléctionné Montant de Débit", NULL}, {"Crédit (DH)", "Crédit", "CREDIT", " Montant crédit", "Montant crédit", "crédit", "credit", NULL}, NULL}
+#define HEADER {{"Date d'opération", "Date opération", "Date Opération", "DATE OPERATION", "Date de la transaction", "Date comptable", "DT opération", "Date opérati", "DATE OPER", "DATE", "Date", NULL}, {"Débit (DH)", "Débit", "DEBIT", " Montant débit", "Montant débit", "debit", "débit", "Vous avez séléctionné Montant de Débit", NULL}, {"Crédit (DH)", "Crédit", "CREDIT", " Montant crédit", "Montant crédit", "crédit", "credit", NULL}, {NULL}}
 #define I_QUE "insert into %s values"
-
-// extern t_envlop envlop;
-// wd = "/home/anas/clones/agios_cal/";
-
 
 typedef struct  s_var
 {
@@ -24,84 +14,30 @@ typedef struct  s_var
     int		year;
 }   t_var;
 
-typedef struct  s_col
-{
-	int             index;
-	char            *colname;
-	struct s_col   *next;
-}   t_col;
+static int query_holder(char **query, char *s);
+int init_db(const char *tab, const char *qu2, t_var *vars);
 
-typedef struct	s_var_date
-{
-	double	v;
-	char	*d_range[2];
-}				t_var_date;
-
-typedef struct  s_rel
-{
-	char		**head;
-	double		solde;
-	int			month;
-	int			year;
-	t_var_date	line;
-	t_var_date	tx_reg;
-	t_var_date	tx_pla;
-	t_col		*col;
-	int			skip[2];
-}   t_rel;
-
-typedef struct		s_date
-{
-	int				date;
-	struct s_date	*next;
-}					t_date;
-typedef struct		s_val
-{
-	long long		val;
-	struct s_val	*next;
-}					t_val;
-typedef struct		s_tab
-{
-	t_date			*date_op;
-	t_date			*date_va;
-	t_val			*debit;
-	t_val			*credit;
-	t_val			*solde;
-}					t_tab;
-
-
-// int	tider(char **query, int x);
-// int	rep_char(char *s, char c1, char c2);
-// int	rm_char(char *s, char c);
-// int	check_from(char *s, char *bq);
-// int	date_mode(char *s);
-// int	date_conv(char **s);
-// int	date_form(char **s, char *bq);
-// int	query_holder(char **query, char *s);
-
-
-int	query_holder(char **query, char *s);
-int init_db(const char *tab, const char *qu2, t_var *vars);//, t_rel *rel);
-t_rel	*jsonparser(char *file, char *bq);
 static void bzeros(void * s, size_t n)
 {
         memset(s, 0, n);
 }
 
 // Checkers
-int iswhitespace(char c) {
+static int iswhitespace(char c) {
     if ((c > 8 && c < 14) || c == 32)
         return 0;
     else
         return 1;
 }
-int isnum (char c) {
+
+static int isnum (char c) {
     if (c > 47 && c < 58)
         return 0;
     else
         return 1;
 }
-int isallnum(const char *s) {
+
+static int isallnum(const char *s) {
     int i;
 
     if (!s)
@@ -113,13 +49,15 @@ int isallnum(const char *s) {
     }
     return 0;
 }
-int isspecial(char c) {
+
+static int isspecial(char c) {
     if (c == 45 || c == 47 || c == 92)
         return 0;
     else
         return 1;
 }
-int is_empty(const char *s) {
+
+static int is_empty(const char *s) {
     int i;
 
     if (!s)
@@ -131,7 +69,8 @@ int is_empty(const char *s) {
     }
     return 0;
 }
-int is_date(const char *s) {
+
+static int is_date(const char *s) {
     int i;
 
     if (!s || !is_empty(s))
@@ -145,12 +84,11 @@ int is_date(const char *s) {
 }
 // Checkers
 
-int pars_date(const char *s, char *ns) {
+static int pars_date(const char *s, char *ns) {
     char        d[3], m[3], y[5];
     int         unixDate;
     time_t      rawTime;
     struct tm   *timeInfo;
-	char        *rt;
     int         i;
 
     if (!s || !ns)
@@ -188,7 +126,8 @@ int pars_date(const char *s, char *ns) {
     }
     return 0;
 }
-int pars_mnt(const char *s, char *ns) {
+
+static int pars_mnt(const char *s, char *ns) {
     int i, j;
 
     if (!s || !ns)
@@ -235,8 +174,7 @@ int pars_mnt(const char *s, char *ns) {
     return 0;
 }
 
-
-int comp_head(const char *val, int i) {
+static int comp_head(const char *val, int i) {
     int j;
     char    *head[4][12] = HEADER;
     if (!val)
@@ -248,7 +186,8 @@ int comp_head(const char *val, int i) {
     }
     return 1;
 }
-int get_index_by_col(xlsxioreadersheet sheet, int *index) {
+
+static int get_index_by_col(xlsxioreadersheet sheet, int *index) {
     const char          *value;
     int                 i;
     int                 col;
@@ -275,9 +214,10 @@ int get_index_by_col(xlsxioreadersheet sheet, int *index) {
         return 1;
     return 0;
 }
-int get_rows(xlsxioreadersheet sheet, char **query, int *index, char *table) {
+
+static int get_rows(xlsxioreadersheet sheet, char **query, int *index, char *table) {
     const char  *value;
-    char        buff[100];
+    char        buff[200];
     char        date[11];
     char        mnt[100];
     int         i;
@@ -287,9 +227,9 @@ int get_rows(xlsxioreadersheet sheet, char **query, int *index, char *table) {
 
     if (!sheet || !query || !index || !table)
         return 1;
-    bzeros(buff, 100);
+    bzeros(buff, 200);
 	*query = NULL;
-    snprintf(buff, 100, I_QUE, table);
+    snprintf(buff, 200, I_QUE, table);
     if (query_holder(query, buff))
         return 1;
     row = 0;
@@ -306,14 +246,14 @@ int get_rows(xlsxioreadersheet sheet, char **query, int *index, char *table) {
                     if (w > 0 && i == 0)
                         query_holder(query, "), \n");
                     if (i == 0 && !pars_date(value, date)) {
-                        snprintf(buff, 100, "('%s'", date);
+                        snprintf(buff, 200, "('%s'", date);
                         query_holder(query, buff);
                     }
                     else {
                         if (!pars_mnt(value, mnt))
-                            snprintf(buff, 100, ", %s", mnt);
+                            snprintf(buff, 200, ", %s", mnt);
                         else
-                            snprintf(buff, 100, ", %s", value);
+                            snprintf(buff, 200, ", %s", value);
                         query_holder(query, buff);
                     }
                     i++;
@@ -330,7 +270,8 @@ int get_rows(xlsxioreadersheet sheet, char **query, int *index, char *table) {
     query_holder(query, ");");
     return 0;
 }
-int import_xlsx(t_var *vars, char *table) {
+
+static int import_xlsx(t_var *vars, char *table) {
     xlsxioreader        workbook;
     xlsxioreadersheet   sheet;
     char                *query;
@@ -358,14 +299,16 @@ int import_xlsx(t_var *vars, char *table) {
     free(query);
     return 0;
 }
+
 int	import_file(char *wd, t_var *vars) {
+    (void)wd;
 	char	buff[50];
 
 	snprintf(buff, 50, "%s_%d_%d", vars->bq, vars->year, vars->month);
     return (import_xlsx(vars, buff));
 }
 
-int	query_holder(char **query, char *s)
+static int	query_holder(char **query, char *s)
 {
 	int			i;
 	int			l;

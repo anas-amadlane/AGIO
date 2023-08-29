@@ -1,7 +1,4 @@
 #include <stdio.h>
-#include<stdlib.h>
-#include <jansson.h>
-// #include <xlsxio_read.h>
 #include <string.h>
 #include <sqlite3.h>
 
@@ -13,17 +10,11 @@ typedef struct	s_date {
 
 typedef struct s_envlop
 {
-    char	wd[200];
-	char	db_path[200];
+    char	wd[500];
+	char	db_path[500];
     char    *bq;
     t_date	date;
 }   t_envlop;
-
-// t_date date;
-
-int	json_writerr(char *file, char *bq, t_date *date);
-// extern const char    *wd;
-// const char    *wd;
 
 static void bzeros(void * s, size_t n)
 {
@@ -58,7 +49,8 @@ static int check_table(char *db_path, char *table, char *bq)
         printf("error 1\n");
     return rt;
 }
-int check_balance(char *db_path, char *bq)
+
+static int check_balance(char *db_path, char *bq)
 {
     int                 rs;
     int                 rt;
@@ -90,9 +82,9 @@ int check_balance(char *db_path, char *bq)
         printf("error 1\n");
     return rt;
 }
-int insert_balance(char *db_path, char *bq, double value)
+
+static int insert_balance(char *db_path, char *bq, double value)
 {
-    int                 rs;
     int                 rt;
 	char                buff[200];
     sqlite3             *db;
@@ -113,8 +105,8 @@ int insert_balance(char *db_path, char *bq, double value)
         printf("error 1\n");
     return rt;
 }
-int create_table(t_envlop *envlop, char *table, double value) {
-    int     rs;
+
+static int create_table(t_envlop *envlop, char *table, double value) {
     int     rt;
     sqlite3 *db;
     char    buff[200];
@@ -148,7 +140,6 @@ int checker(t_envlop *envlop) {
 
     if (!envlop)
         return -1;
-    // printf("%s\n", envlop->db_path);
     if (check_balance(envlop->db_path, envlop->bq) == 1)
         return 1;
     i = -1;
@@ -158,6 +149,7 @@ int checker(t_envlop *envlop) {
     }
     return 0;
 }
+
 int creater(t_envlop *envlop, double *value) {
     int     i;
     char    *tab[4] = {"LINE", "TREG", "TPLA", NULL};
@@ -170,65 +162,3 @@ int creater(t_envlop *envlop, double *value) {
     insert_balance(envlop->db_path, envlop->bq, value[i]);
     return 0;
 }
-
-// int main() {
-//     t_envlop envlop;
-//     char    *bq;
-//     char    path[200];
-//     int     value[3];
-
-//     wd = "/home/anas/clones/agios_cal/";
-//     bzeros(path, 200);
-//     (strcat(path, wd), strcat(path, "agio.db"));
-//     envlop.db_path = path;
-//     envlop.bq = "BMCE";
-//     envlop.date.d = 12;
-//     envlop.date.m = 3;
-//     envlop.date.y = 2023;
-//     value[0] = 230045;
-//     value[1] = 2.5;
-//     value[2] = 4;
-//     if (checker(&envlop) == 1) {
-//         printf("passed\n");
-//         creater(&envlop, 2000, value);
-//         bzeros(path, 200);
-//         (strcat(path, wd), strcat(path, "data/module_tmp.json"));
-//         json_writer(path, envlop.bq, &envlop.date);
-//     }
-//     return 0;
-// }
-
-int	json_writerr(char *file, char *bq, t_date *date) {
-    int				rt;
-	json_t			*object;
-    json_t			*root;
-    json_error_t	error;
-	// t_date			date;
-
-	rt = 1;
-    if (!file || !bq || !date)
-        return rt;
-    root = json_load_file(file, 0, &error);
-    if (!root)
-        return (fprintf(stderr, "Failed to parse JSON: %s\n", error.text), rt);
-    object = json_object_get(root, bq);
-    if (json_is_object(object)) {
-		json_object_set_new(object, "Month", json_integer(date->m));
-		json_object_set_new(object, "Year", json_integer(date->y));
-		if (json_dump_file(root, file, JSON_INDENT(3)))
-			fprintf(stderr, "Failed to write JSON to file.\n");
-		else
-			rt = 0;
-    }
-	else
-		fprintf(stderr, "Failed to find 'BP' section in the JSON data.\n");
-    return (json_decref(root), rt);
-}
-
-// int main() {
-// 	t_date date;
-
-// 	json_reader("/home/anas/clones/agios_cal/data/module_tmp.json", "BP", &date);
-// 	printf("%d %d\n", date.m, date.y);
-// 	json_writer("/home/anas/clones/agios_cal/data/module_tmp.json", "BP", &date);
-// }

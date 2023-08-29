@@ -1,7 +1,18 @@
-#define IMPORT_GUI_C
-#include <strings.h>
-#include <string.h>
-#include "../inc/agios.h"
+#include <gtk/gtk.h>
+#include <sqlite3.h>
+#include <jansson.h>
+
+#define APPNAME 5
+// #define APPNAME 8
+
+typedef struct	s_var
+{
+    char    *file;
+    char    *bq;
+    int     month;
+    int		year;
+}   t_var;
+
 typedef struct	s_date {
     int d;
 	int	m;
@@ -10,20 +21,47 @@ typedef struct	s_date {
 
 typedef struct s_envlop
 {
-    char	wd[200];
-	char	db_path[200];
+    char	wd[500];
+	char	db_path[500];
     char    *bq;
     t_date	date;
 }   t_envlop;
 
-t_date date;
+typedef struct s_prov {
+	GtkWidget		*button;
+	GtkCssProvider	*provider;
+}	t_prov;
+t_prov provider;
 
-static void bzeros(void * s, size_t n)
-{
-        memset(s, 0, n);
+int	import_file(char *wd, t_var *vars);
+int init_export(t_var *vars, char *trim, char *wd);
+int checker(t_envlop *envlop);
+int creater(t_envlop *envlop, double *value);
+
+gchar		*file_path = NULL;
+GtkWidget	*imp_frame[3];
+GtkWidget	*tra_frame[2];
+GtkWidget	*mod_frame;
+GtkWidget	*exp_frame;
+GtkWidget	*bq_frame;
+GtkWidget	*bq_combo;
+GtkWidget	*month_label;
+GtkWidget	*ticket_label;
+GtkWidget   *label[21][4];
+GtkWidget	*exp_combo[2];
+GtkWidget	*mod_combo;
+GtkWidget	*tra_combo[2];
+GtkWidget	*bq_spec_frame;
+GtkWidget	*bq_spin_button[4];
+const char	*appdata;
+t_envlop	envlop;
+t_date		date;
+
+static void	bzeros(void * s, size_t n) {
+	memset(s, 0, n);
 }
 
-int	json_writer(char *file, char *bq, t_date *date) {
+static int	json_writer(char *file, char *bq, t_date *date) {
     int				rt;
 	json_t			*object;
     json_t			*root;
@@ -35,7 +73,6 @@ int	json_writer(char *file, char *bq, t_date *date) {
     root = json_load_file(file, 0, &error);
     if (!root)
         return (fprintf(stderr, "Failed to parse JSON: %s\n", error.text), rt);
-	// printf("%s\n", envlop.date);
     object = json_object_get(root, bq);
     if (json_is_object(object)) {
 		json_object_set_new(object, "Month", json_integer(date->m));
@@ -50,51 +87,31 @@ int	json_writer(char *file, char *bq, t_date *date) {
     return (json_decref(root), rt);
 }
 
-int checker(t_envlop *envlop);
-int creater(t_envlop *envlop, double *value);
+static int	json_reader(char *file, char *bq, t_date *date) {
+	int				rt;
+	json_t			*object;
+	json_t			*root;
+	json_error_t	error;
 
-gchar		*file_path = NULL;
-//t_rel		*releve = NULL;
-GtkWidget	*imp_frame[3];
-GtkWidget	*tra_frame[2];
-GtkWidget	*mod_frame;
-GtkWidget	*exp_frame;
-GtkWidget	*bq_frame;
-GtkWidget	*bq_combo;
-GtkWidget	*month_label;
-GtkWidget	*ticket_label;
-GtkWidget   *label[21][4];
-GtkWidget	*exp_combo[2];
-GtkWidget	*mod_combo;
-GtkWidget	*tra_combo[2];
-GtkWidget	*bq_spec_frame;
+	rt = 1;
+	if (!file || !bq || !date)
+		return rt;
+	root = json_load_file(file, 0, &error);
+	if (!root)
+		return (fprintf(stderr, "Failed to parse JSON: %s\n", error.text), rt);
+	object = json_object_get(root, bq);
+	if (json_is_object(object)) {
+		date->m = json_integer_value(json_object_get(object, "Month"));
+		date->y = json_integer_value(json_object_get(object, "Year"));
+		json_decref(root);
+		rt = 0;
+	}
+	else
+		fprintf(stderr, "Failed to find 'BP' section in the JSON data.\n");
+	return rt;
+}
 
-// char		wd[100];
-t_envlop	envlop;
-
-
-
-// void set_widget_color(GtkWidget *widget, const char *color) {
-//     GtkStyleContext *context = gtk_widget_get_style_context(widget);
-//     GtkCssProvider *provider = gtk_css_provider_new();
-//     gchar *css = g_strdup_printf("button { background-color: %s; }", color);
-//     gtk_css_provider_load_from_data(provider, css, -1, NULL);
-//     g_free(css);
-
-//     gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-//     g_object_unref(provider);
-// }
-// void restore_default_widget_color(GtkWidget *widget) {
-//     gtk_widget_reset_style(widget);
-// }
-
-typedef struct s_prov {
-	GtkWidget		*button;
-	GtkCssProvider	*provider;
-}	t_prov;
-t_prov provider;
-
-void set_widget_color(const char *color) {
+static void	set_widget_color(const char *color) {
 	char	css[100];
 	bzeros(css, 100);
 
@@ -105,7 +122,7 @@ void set_widget_color(const char *color) {
 	gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider.provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
 }
 
-void remove_widget_color(void) {
+static void	remove_widget_color(void) {
     GtkStyleContext *context = gtk_widget_get_style_context(provider.button);
     if (provider.provider != NULL) {
         gtk_style_context_remove_provider(context, GTK_STYLE_PROVIDER(provider.provider));
@@ -113,11 +130,10 @@ void remove_widget_color(void) {
     }
 }
 
-
-
 // Sidebar GUI
 static void	button_clicked(GtkWidget *widget, gpointer data)
 {
+	(void)data;
 	const gchar	*label;
 
 	label = gtk_button_get_label(GTK_BUTTON(widget));
@@ -176,10 +192,9 @@ static void	sidebar_part(GtkWidget *box) {
 	GtkWidget	*tra_button;
 	GtkWidget	*mod_button;
 	GtkWidget	*footer_label;
-	char		path[200];
+	char		path[500];
 
-	bzeros(path, 200);
-    (strcat(path, envlop.wd), strcat(path, "data/logo/logo.png"));
+	(bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/logo.png"));
 	sidebar = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_widget_set_name(sidebar, "sidebar");
 	gtk_box_pack_start(GTK_BOX(box), sidebar, FALSE, FALSE, 0);
@@ -220,10 +235,9 @@ static void	sidebar_part(GtkWidget *box) {
 }
 
 // BQ BALANCE LINE TAUX
-GtkWidget	*bq_spin_button[4];
-
-void	on_calendar_date_selected(GtkCalendar *calendar, gpointer user_data) {
-    guint year, month, day;
+static void	on_calendar_date_selected(GtkCalendar *calendar, gpointer user_data) {
+    (void)user_data;
+	guint year, month, day;
     gtk_calendar_get_date(calendar, &year, &month, &day);
 	envlop.date.d = day;
 	envlop.date.m = month + 1;
@@ -231,9 +245,11 @@ void	on_calendar_date_selected(GtkCalendar *calendar, gpointer user_data) {
 }
 
 static void	save_clicked(GtkComboBox *combo_box, gpointer user_data) {
+	(void)combo_box;
+	(void)user_data;
 	double	value[4];
 	gpointer	selectedBq;
-	char		path[200];
+	char		path[500];
 
 	value[3] = gtk_spin_button_get_value(GTK_SPIN_BUTTON(bq_spin_button[0]));
 	value[0] = gtk_spin_button_get_value(GTK_SPIN_BUTTON(bq_spin_button[1]));
@@ -243,19 +259,17 @@ static void	save_clicked(GtkComboBox *combo_box, gpointer user_data) {
 		selectedBq = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(bq_combo));
 		if (!selectedBq)
 			return;
-		// bzeros(path, 200);
-    	// (strcat(path, envlop.wd), strcat(path, "agio.db"));
-    	// envlop.db_path = path;
-    	envlop.bq = (char *)selectedBq;
+		if (envlop.bq)
+			free(envlop.bq);
+		envlop.bq = (char *)selectedBq;
 		creater(&envlop, value);
-		bzeros(path, 200);
-		(strcat(path, envlop.wd), strcat(path, "data/module_tmp.json"));
+		(bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/module.json"));
         json_writer(path, envlop.bq, &envlop.date);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(bq_spin_button[0]), 0);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(bq_spin_button[1]), 0);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(bq_spin_button[2]), 0);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(bq_spin_button[3]), 0);
-		snprintf(path, 200, "<span font_size=\"15000\">%d/%d</span>", envlop.date.m, envlop.date.y);
+		snprintf(path, 500, "<span font_size=\"15000\">%d/%d</span>", envlop.date.m, envlop.date.y);
 		gtk_label_set_markup(GTK_LABEL(month_label), path);
 		gtk_widget_show(bq_frame);
 		gtk_widget_show(imp_frame[0]);
@@ -266,10 +280,13 @@ static void	save_clicked(GtkComboBox *combo_box, gpointer user_data) {
 		gtk_widget_hide(tra_frame[1]);
 		gtk_widget_hide(bq_spec_frame);
 		gtk_widget_hide(mod_frame);
-		g_free(selectedBq);
 	}
 }
+
 static void cancel_clicked(GtkComboBox *combo_box, gpointer user_data) {
+	(void)combo_box;
+	(void)user_data;
+
 	gtk_combo_box_set_active(GTK_COMBO_BOX(bq_combo), -1);
 	gtk_widget_show(bq_frame);
 	gtk_widget_show(imp_frame[0]);
@@ -281,6 +298,7 @@ static void cancel_clicked(GtkComboBox *combo_box, gpointer user_data) {
 	gtk_widget_hide(bq_spec_frame);
 	gtk_widget_hide(mod_frame);
 }
+
 static void	bqspec_part(GtkWidget *content_area) {
 	GtkWidget	*grid;
 	GtkWidget	*space[7];
@@ -332,8 +350,6 @@ static void	bqspec_part(GtkWidget *content_area) {
 	space[4] = gtk_label_new("");
 	gtk_grid_attach(GTK_GRID(grid), space[4], 0, 8, 3, 2);
 	// Button
-	// space[6] = gtk_label_new("");
-	// gtk_grid_attach(GTK_GRID(grid), space[6], 0, 11, 1, 1);
 	bq_spec_button[0] = gtk_button_new_with_label("Cancel");
 	bq_spec_button[1] = gtk_button_new_with_label("Save");
 	gtk_grid_attach(GTK_GRID(grid), bq_spec_button[0], 0, 10, 1, 1);
@@ -343,46 +359,21 @@ static void	bqspec_part(GtkWidget *content_area) {
     g_signal_connect(bq_spec_button[0], "clicked", G_CALLBACK(cancel_clicked), NULL);
     g_signal_connect(bq_spec_button[1], "clicked", G_CALLBACK(save_clicked), NULL);
 }
-//
 
 // Import part
-int	json_reader(char *file, char *bq, t_date *date) {
-	int				rt;
-	json_t			*object;
-	json_t			*root;
-	json_error_t	error;
-
-	rt = 1;
-	if (!file || !bq || !date)
-		return rt;
-	root = json_load_file(file, 0, &error);
-	if (!root)
-		return (fprintf(stderr, "Failed to parse JSON: %s\n", error.text), rt);
-	object = json_object_get(root, bq);
-	if (json_is_object(object)) {
-		date->m = json_integer_value(json_object_get(object, "Month"));
-		date->y = json_integer_value(json_object_get(object, "Year"));
-		json_decref(root);
-		rt = 0;
-	}
-	else
-		fprintf(stderr, "Failed to find 'BP' section in the JSON data.\n");
-	return rt;
-}
-
 static void	on_combo_changed(GtkComboBox *combo_box, gpointer user_data) {
+	(void)combo_box;
+	(void)user_data;
 	gpointer	selectedBq;
 	char		buff[100];
-    char    *bq;
-    char    path[200];
+    char    path[500];
 
 	selectedBq = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(bq_combo));
 	if (!selectedBq)
 		return;
-    // bzeros(path, 200);
-    // (strcat(path, envlop.wd), strcat(path, "agio.db"));
-    // envlop.db_path = path;
-    envlop.bq = (char *)selectedBq;
+	if (envlop.bq)
+		free(envlop.bq);
+	envlop.bq = (char *)selectedBq;
     if (checker(&envlop) == 1) {
 		gtk_widget_hide(bq_frame);
 		gtk_widget_hide(imp_frame[0]);
@@ -393,57 +384,54 @@ static void	on_combo_changed(GtkComboBox *combo_box, gpointer user_data) {
 		gtk_widget_hide(tra_frame[1]);
 		gtk_widget_hide(mod_frame);
 		gtk_widget_show(bq_spec_frame);
+		gtk_label_set_markup(GTK_LABEL(month_label), " ");
     }
 	else {
-		bzeros(path, 200);
-		(strcat(path, envlop.wd), strcat(path, "data/module_tmp.json"));
+		(bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/module.json"));
 		json_reader(path, selectedBq, &envlop.date);
-		// releve = jsonparser("/home/anas/clones/agios_cal/data/module.json", (char *)selectedBq);
-		// if (!releve)
-		// 	return ;
 		snprintf(buff, 100, "<span font_size=\"15000\">%d/%d</span>", envlop.date.m, envlop.date.y);
 		gtk_label_set_markup(GTK_LABEL(month_label), buff);
-		g_free(selectedBq);
 	}
 }
 
 
 static void	on_cloture_clicked(GtkButton *button, gpointer user_data) {
+	(void)button;
     sqlite3				*db;
 	sqlite3_stmt		*stmt;
 	int					value;
 	gpointer			selectedBq;
 	char				buff[200];
-	char				path[200];
-	const unsigned char	*tableName;
+	char				path[500];
+	const  char	*tableName;
 
 	db = NULL;
 	selectedBq = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(bq_combo));
 	if (!selectedBq)
 		return ;
 	value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(user_data));
-	(bzeros(path, 200), strcat(path, envlop.wd), strcat(path, "data/module_tmp.json"));
+	(bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/module.json"));
 	if (!sqlite3_open(envlop.db_path, &db))
 	{
 		bzeros(buff, 200);
 		if (envlop.date.m < 12) {
 			if (envlop.date.m < 10)
-				snprintf(buff, 200, "select balance from CONC_OP_%s_%d where S_DATE = date('%d-0%d-01', '-1 day');", selectedBq, envlop.date.y, envlop.date.y, envlop.date.m+1);
+				snprintf(buff, 200, "select balance from CONC_OP_%s_%d where S_DATE = date('%d-0%d-01', '-1 day');", (char *)selectedBq, envlop.date.y, envlop.date.y, envlop.date.m+1);
 			else
-				snprintf(buff, 200, "select balance from CONC_OP_%s_%d where S_DATE = date('%d-%d-01', '-1 day');", selectedBq, envlop.date.y, envlop.date.y, envlop.date.m+1);
+				snprintf(buff, 200, "select balance from CONC_OP_%s_%d where S_DATE = date('%d-%d-01', '-1 day');", (char *)selectedBq, envlop.date.y, envlop.date.y, envlop.date.m+1);
 		}
 		else
-			snprintf(buff, 200, "select balance from CONC_OP_%s_%d where S_DATE = '%d-12-31';", selectedBq, envlop.date.y, envlop.date.y);
+			snprintf(buff, 200, "select balance from CONC_OP_%s_%d where S_DATE = '%d-12-31';", (char *)selectedBq, envlop.date.y, envlop.date.y);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK)
 			fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
         else if (sqlite3_step(stmt) == SQLITE_ROW) {
-			tableName = sqlite3_column_text(stmt, 0);
+			tableName = (char *)sqlite3_column_text(stmt, 0);
             if (atoi(tableName) == value) {
 				if (envlop.date.m < 12)
 					envlop.date.m += 1;
 				else {
 					bzeros(buff, 200);
-					snprintf(buff, 200, "UPDATE BQ_SPEC SET SOLDE = (SELECT BALANCE FROM CONC_OP_%s_%d WHERE S_date = '%d-12-31') WHERE BQ = '%s';", selectedBq, envlop.date.y, envlop.date.y, selectedBq);
+					snprintf(buff, 200, "UPDATE BQ_SPEC SET SOLDE = (SELECT BALANCE FROM CONC_OP_%s_%d WHERE S_date = '%d-12-31') WHERE BQ = '%s';", (char *)selectedBq, envlop.date.y, envlop.date.y, (char *)selectedBq);
 					sqlite3_exec(db, buff, NULL, NULL, NULL);
 					(envlop.date.m = 1, envlop.date.y += 1);
 				}
@@ -461,6 +449,7 @@ static void	on_cloture_clicked(GtkButton *button, gpointer user_data) {
 }
 
 static void	on_file_selected(GtkFileChooserButton *chooser_button, gpointer user_data) {
+	(void)user_data;
 	remove_widget_color();
 	if (file_path)
     	g_free(file_path);
@@ -468,6 +457,8 @@ static void	on_file_selected(GtkFileChooserButton *chooser_button, gpointer user
 }
 
 static void	on_import_clicked(GtkWidget *widget, gpointer user_data) {
+	(void)widget;
+	(void)user_data;
 	t_var		vars;
 	gpointer	selectedBq;
 
@@ -476,8 +467,8 @@ static void	on_import_clicked(GtkWidget *widget, gpointer user_data) {
 		return ;
 	vars.file = file_path;
 	vars.bq = (char *)selectedBq;
-	vars.month = envlop.date.m;//releve->month;
-	vars.year = envlop.date.y;//releve->year;
+	vars.month = envlop.date.m;
+	vars.year = envlop.date.y;
 	if (!import_file(envlop.wd, &vars))
 		set_widget_color("#41B64A");
 	else
@@ -488,7 +479,6 @@ static void	on_import_clicked(GtkWidget *widget, gpointer user_data) {
 static void	import_part(GtkWidget *content_area) {
 	GtkWidget	*grid;
 	GtkWidget	*cloture_label;
-	GtkWidget	*frame_box;
 	GtkWidget	*cloture_box;
 	GtkWidget	*cloture_button;
 	GtkWidget	*spin_button;
@@ -531,9 +521,10 @@ static void	import_part(GtkWidget *content_area) {
 	import_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   	drag_area = gtk_file_chooser_button_new("Select file", GTK_FILE_CHOOSER_ACTION_OPEN);
     file_filter = gtk_file_filter_new();
-    gtk_file_filter_set_name(file_filter, "XLSX and CSV Files");
-    gtk_file_filter_add_mime_type(file_filter, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    gtk_file_filter_add_mime_type(file_filter, "text/csv");
+    gtk_file_filter_add_pattern(file_filter, "*.xls");
+    gtk_file_filter_add_pattern(file_filter, "*.xlsx");
+    gtk_file_filter_add_pattern(file_filter, "*.csv");
+    gtk_file_filter_set_name(file_filter, "Excel and CSV Files");
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(drag_area), file_filter);
     g_signal_connect(drag_area, "file-set", G_CALLBACK(on_file_selected), NULL);
     gtk_box_pack_start(GTK_BOX(import_box), drag_area, TRUE, TRUE, 5);
@@ -546,6 +537,7 @@ static void	import_part(GtkWidget *content_area) {
 
 // Export part
 static void	on_export_clicked(GtkWidget *widget, gpointer data) {
+	(void)widget;
 	GtkWidget				*dialog;
 	GtkFileChooser			*chooser;
 	gint					res;
@@ -589,6 +581,10 @@ static void	on_export_clicked(GtkWidget *widget, gpointer data) {
 static void	export_part(GtkWidget *content_area) {
 	GtkWidget	*exp_box;
 	GtkWidget	*exp_button;
+	char		yearStr[20];
+	int			currentYear;
+	int			currentYearIndex;
+	time_t		t;
 
 	exp_frame = gtk_frame_new("Export tickets");
 	gtk_frame_set_label_align(GTK_FRAME(exp_frame), 0.5, 0.5);
@@ -602,24 +598,12 @@ static void	export_part(GtkWidget *content_area) {
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(exp_combo[0]), "4éme trimestre");
 	gtk_box_pack_start(GTK_BOX(exp_box), exp_combo[0], TRUE, TRUE, 5);
 	// year combo
-	char	yearStr[5];
-	int		currentYear;
-	int		currentYearIndex;
-
-
-	/////
-	time_t t;
     t = time(NULL);
     struct tm tm = *localtime(&t);
 	currentYear = tm.tm_year+1900;
-    // getch();
-	////
-
-
-	// currentYear = 2023; //relve year
 	exp_combo[1] = gtk_combo_box_text_new();
 	for (int year = currentYear - 10; year <= currentYear + 10; ++year) {
-		snprintf(yearStr, 5, "%d", year);
+		snprintf(yearStr, 20, "%d", year);
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(exp_combo[1]), yearStr);
 	}
 	currentYearIndex = currentYear - (currentYear - 10);
@@ -634,16 +618,10 @@ static void	export_part(GtkWidget *content_area) {
 }
 
 // Track part
-
-// define query "select sum(NB_DEB_REG * 0.045/360) from NB_DEB_SGMB where date between '2023-01' and '2023-03' group by strftime('%m', date);"
-// define query "select sum(NB_DEB_PLA * 0.075/360) from NB_DEB_SGMB where date between '2023-01' and '2023-03' group by strftime('%m', date);"
 #define TR1 {"Janvier", "Feverier", "Mars", NULL}
 #define TR2 {"Janvier", "Feverier", "Mars", NULL}
 #define TR3 {"Janvier", "Feverier", "Mars", NULL}
 #define TR4 {"Janvier", "Feverier", "Mars", NULL}
-/*#define TR2 "\t\t\tJanvier\t\t\tFeverier\t\t\tMars\n"
-#define TR3 "\t\t\tJanvier\t\t\tFeverier\t\t\tMars\n"
-#define TR4 "\t\t\tJanvier\t\t\tFeverier\t\t\tMars\n"*/
 #define TD1 " WHERE DATE BETWEEN '%s-01' AND '%s-04'"
 #define TD2 " WHERE DATE BETWEEN '%s-04' AND '%s-07'"
 #define TD3 " WHERE DATE BETWEEN '%s-07' AND '%s-10'"
@@ -651,6 +629,7 @@ static void	export_part(GtkWidget *content_area) {
 #define NB_DEB "CREATE VIEW IF NOT EXISTS NB_DEB_%s AS WITH NB_DEB_%s AS (SELECT DATE(S_DATE) AS DATE, CASE WHEN BALANCE >= 0 THEN BALANCE ELSE 0 END AS NB_CRE, CASE WHEN BALANCE >= 0 THEN 0 WHEN -1 * BALANCE <= (SELECT TAUX FROM LINE_%s WHERE EDATE>S_DATE) THEN -1 * BALANCE ELSE (SELECT TAUX FROM LINE_%s WHERE EDATE>S_DATE) END AS NB_DEB_REG, CASE WHEN BALANCE >= 0 THEN 0 WHEN -1 * BALANCE <= (SELECT TAUX FROM LINE_%s WHERE EDATE>S_DATE) THEN 0 ELSE -1 * BALANCE - (SELECT TAUX FROM LINE_%s WHERE EDATE>S_DATE) END AS NB_DEB_PLA FROM CONC_OP_%s_%s) SELECT DATE, NB_CRE, NB_DEB_REG, NB_DEB_PLA, ((NB_DEB_REG * (SELECT TAUX FROM TREG_%s WHERE EDATE>DATE)/100)/360 + (NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s WHERE EDATE>DATE)/100)/360) AS INTER FROM NB_DEB_%s;"
 
 static void on_track_clicked(GtkButton *button, gpointer user_data) {
+	(void)button;
     int             i;
     int             j;
     sqlite3         *db;
@@ -670,27 +649,25 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
 	selectedYear = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(tra_combo[1]));
 	if (!selectedBq || !selectedYear || !selectedtrim)
 		return ;
-	if (!selectedBq || !selectedtrim)
-		return;
 	if (!strcmp(selectedtrim, "1er trimestre"))
 	{
 		(dt_r[0] = "Janvier", dt_r[1] = "Feverier", dt_r[2] = "Mars", dt_r[3] = NULL);
-		snprintf(dt_d, 100, TD1, selectedYear, selectedYear);
+		snprintf(dt_d, 100, TD1, (char *)selectedYear, (char *)selectedYear);
 	}
 	else if (!strcmp(selectedtrim, "2éme trimestre")) {
 
 		(dt_r[0] = "Janvier", dt_r[1] = "Feverier", dt_r[2] = "Mars", dt_r[3] = NULL);
-		snprintf(dt_d, 100, TD2, selectedYear, selectedYear);
+		snprintf(dt_d, 100, TD2, (char *)selectedYear, (char *)selectedYear);
 	}
 	else if (!strcmp(selectedtrim, "3éme trimestre")) {
 
 		(dt_r[0] = "Janvier", dt_r[1] = "Feverier", dt_r[2] = "Mars", dt_r[3] = NULL);
-		snprintf(dt_d, 100, TD3, selectedYear, selectedYear);
+		snprintf(dt_d, 100, TD3, (char *)selectedYear, (char *)selectedYear);
 	}
 	else {
 
 		(dt_r[0] = "Janvier", dt_r[1] = "Feverier", dt_r[2] = "Mars", dt_r[3] = NULL);
-		snprintf(dt_d, 100, TD4, selectedYear, selectedYear);
+		snprintf(dt_d, 100, TD4, (char *)selectedYear, (char *)selectedYear);
 	}
     i = -1;
     while (++i < 21) {
@@ -700,15 +677,17 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
     }
 	if (!sqlite3_open(envlop.db_path, &db))
 	{
-		snprintf(buff, 2000, NB_DEB, selectedBq, selectedBq, selectedBq, selectedBq, selectedBq, selectedBq, selectedBq, selectedYear, selectedBq, selectedBq, selectedBq);
+		bzeros(buff, 2000);
+		snprintf(buff, 2000, NB_DEB, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedYear, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq);
 		sqlite3_exec(db, buff, NULL, NULL, NULL);
-		snprintf(buff, 300, "select round(sum(NB_DEB_REG), 1) from NB_DEB_%s %s group by strftime('%%m', date);", selectedBq, dt_d, selectedYear, selectedYear);
+		bzeros(buff, 2000);
+		snprintf(buff, 300, "select round(sum(NB_DEB_REG), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, dt_d);
         if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
 			return ;
 		}
-		snprintf(buff, 500, "CALCUL TICKET AGIOS %s %s", selectedBq, selectedtrim);
+		snprintf(buff, 500, "CALCUL TICKET AGIOS %s %s", (char *)selectedBq, (char *)selectedtrim);
         gtk_label_set_text(GTK_LABEL(label[0][1]), buff);
         gtk_label_set_text(GTK_LABEL(label[3][0]), "Nbres Débiteurs  ");
 		i = 0;
@@ -719,27 +698,27 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
         gtk_label_set_text(GTK_LABEL(label[5][0]), "Autorisé           ");
         i = 1;
         while (sqlite3_step(stmt) == SQLITE_ROW)
-            gtk_label_set_text(GTK_LABEL(label[5][i++]), sqlite3_column_text(stmt, 0));
+            gtk_label_set_text(GTK_LABEL(label[5][i++]), (char *)sqlite3_column_text(stmt, 0));
         gtk_label_set_text(GTK_LABEL(label[6][0]), "Dépassement      ");
-		snprintf(buff, 300, "select round(sum(NB_DEB_PLA), 1) from NB_DEB_%s %s group by strftime('%%m', date);", selectedBq, dt_d);
+		snprintf(buff, 300, "select round(sum(NB_DEB_PLA), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, dt_d);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
-			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
+			fprintf(stderr, "Failed to execute statement1: %s\n", (char *)sqlite3_errmsg(db));
 			sqlite3_close(db);
 			return ;
 		}
         i = 1;
         while (sqlite3_step(stmt) == SQLITE_ROW)
-            gtk_label_set_text(GTK_LABEL(label[6][i++]), sqlite3_column_text(stmt, 0));
+            gtk_label_set_text(GTK_LABEL(label[6][i++]), (char *)sqlite3_column_text(stmt, 0));
         gtk_label_set_text(GTK_LABEL(label[7][0]), "Total Nb_Déb      ");
-		snprintf(buff, 300, "select round(sum(NB_DEB_REG) + sum(NB_DEB_PLA), 1) from NB_DEB_%s %s group by strftime('%%m', date);", selectedBq, dt_d);
+		snprintf(buff, 300, "select round(sum(NB_DEB_REG) + sum(NB_DEB_PLA), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, dt_d);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
-			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
+			fprintf(stderr, "Failed to execute statement1: %s\n", (char *)sqlite3_errmsg(db));
 			sqlite3_close(db);
 			return ;
 		}
         i = 1;
         while (sqlite3_step(stmt) == SQLITE_ROW)
-            gtk_label_set_text(GTK_LABEL(label[7][i++]), sqlite3_column_text(stmt, 0));
+            gtk_label_set_text(GTK_LABEL(label[7][i++]), (char *)sqlite3_column_text(stmt, 0));
         gtk_label_set_text(GTK_LABEL(label[10][0]), "Intérêt /Nb_Déb  ");
 		i = 0;
 		while (dt_r[i]) {
@@ -747,7 +726,7 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
 			i++;
 		}
         gtk_label_set_text(GTK_LABEL(label[12][0]), "Autorisé           ");
-		snprintf(buff, 300, "select round(sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360), 1) from NB_DEB_%s %s group by strftime('%%m', date);", selectedBq, selectedBq, dt_d);
+		snprintf(buff, 300, "select round(sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, (char *)selectedBq, dt_d);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
@@ -755,9 +734,9 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
 		}
         i = 1;
         while (sqlite3_step(stmt) == SQLITE_ROW)
-            gtk_label_set_text(GTK_LABEL(label[12][i++]), sqlite3_column_text(stmt, 0));
+            gtk_label_set_text(GTK_LABEL(label[12][i++]), (char *)sqlite3_column_text(stmt, 0));
         gtk_label_set_text(GTK_LABEL(label[13][0]), "Dépassement      ");
-		snprintf(buff, 300, "select round(sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360), 1) from NB_DEB_%s %s group by strftime('%%m', date);", selectedBq, selectedBq, dt_d);
+		snprintf(buff, 300, "select round(sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, (char *)selectedBq, dt_d);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
@@ -765,9 +744,9 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
 		}
         i = 1;
         while (sqlite3_step(stmt) == SQLITE_ROW)
-            gtk_label_set_text(GTK_LABEL(label[13][i++]), sqlite3_column_text(stmt, 0));
+            gtk_label_set_text(GTK_LABEL(label[13][i++]), (char *)sqlite3_column_text(stmt, 0));
         gtk_label_set_text(GTK_LABEL(label[14][0]), "Total Intérêt     ");
-		snprintf(buff, 300, "select round(sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360) + sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360), 1) from NB_DEB_%s %s group by strftime('%%m', date);", selectedBq, selectedBq, selectedBq, dt_d);
+		snprintf(buff, 300, "select round(sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360) + sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, dt_d);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
@@ -775,23 +754,23 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
 		}
         i = 1;
         while (sqlite3_step(stmt) == SQLITE_ROW)
-            gtk_label_set_text(GTK_LABEL(label[14][i++]), sqlite3_column_text(stmt, 0));
+            gtk_label_set_text(GTK_LABEL(label[14][i++]), (char *)sqlite3_column_text(stmt, 0));
         gtk_label_set_text(GTK_LABEL(label[16][0]), "Intérêts calculés");
-		snprintf(buff, 300, "select round(sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360) + sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360), 1) from NB_DEB_%s %s;", selectedBq, selectedBq, selectedBq, dt_d);
+		snprintf(buff, 300, "select round(sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360) + sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360), 1) from NB_DEB_%s %s;", (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, dt_d);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
 			return ;
 		}
         else if (sqlite3_step(stmt) == SQLITE_ROW)
-            gtk_label_set_text(GTK_LABEL(label[16][1]), sqlite3_column_text(stmt, 0));
+            gtk_label_set_text(GTK_LABEL(label[16][1]), (char *)sqlite3_column_text(stmt, 0));
         gtk_label_set_text(GTK_LABEL(label[17][0]), "Intérêts Débités ");
 
 
 		snprintf(buff, 300, "%d", value);
         gtk_label_set_text(GTK_LABEL(label[17][1]), buff);
         gtk_label_set_text(GTK_LABEL(label[18][0]), "Différence        ");
-		snprintf(buff, 300, "select round((sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360) + sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360))-%d, 1) from NB_DEB_%s %s;", selectedBq, selectedBq, value, selectedBq, dt_d);
+		snprintf(buff, 300, "select round((sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360) + sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360))-%d, 1) from NB_DEB_%s %s;", (char *)selectedBq, (char *)selectedBq, value, (char *)selectedBq, dt_d);
         if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
@@ -801,9 +780,8 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
             snprintf(buff, 300, "%s", sqlite3_column_text(stmt, 0));
             gtk_label_set_text(GTK_LABEL(label[18][1]), buff);
         }
-		// gtk_label_set_text(GTK_LABEL(label[18][1]), buff);
         gtk_label_set_text(GTK_LABEL(label[19][0]), "Taux Moyenne     ");
-		snprintf(buff, 300, "SELECT ROUND(((SUM(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360) + SUM(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360))/(SUM(NB_DEB_REG) + SUM(NB_DEB_PLA)))*360*100, 2) FROM NB_DEB_%s %s;", selectedBq, selectedBq, selectedBq, dt_d);
+		snprintf(buff, 300, "SELECT ROUND(((SUM(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360) + SUM(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360))/(SUM(NB_DEB_REG) + SUM(NB_DEB_PLA)))*360*100, 2) FROM NB_DEB_%s %s;", (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, dt_d);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
@@ -820,7 +798,7 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
 static void	track_part(GtkWidget *content_area) {
 	GtkWidget	*tra_box;
 	GtkWidget	*tra_button;
-	char		yearStr[5];
+	char		yearStr[20];
 	int			currentYear;
 	int			currentYearIndex;
 	time_t		t;
@@ -829,14 +807,9 @@ static void	track_part(GtkWidget *content_area) {
 	gtk_frame_set_label_align(GTK_FRAME(tra_frame[0]), 0.5, 0.5);
 	tra_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_box_set_homogeneous(GTK_BOX(tra_box), TRUE);
-
-	//
-	// cloture_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     GtkWidget *tra_label = gtk_label_new("veuillez entrer l'intérêts Débités");
     GtkWidget *spin_button = gtk_spin_button_new(gtk_adjustment_new(0.0,
 			-G_MAXDOUBLE, G_MAXDOUBLE, 0.01, 0.1, 0.0), 0.01, 2);
-    // cloture_button = gtk_button_new_with_label("Cloturer");
-    // g_signal_connect(cloture_button, "clicked", G_CALLBACK(on_cloture_clicked), spin_button);
 	gtk_box_pack_start(GTK_BOX(tra_box), tra_label, TRUE, TRUE, 5);
 	gtk_box_pack_start(GTK_BOX(tra_box), spin_button, TRUE, TRUE, 5);
 	// trimestre combo
@@ -850,10 +823,9 @@ static void	track_part(GtkWidget *content_area) {
     t = time(NULL);
     struct tm tm = *localtime(&t);
 	currentYear = tm.tm_year+1900;
-	// currentYear = 2023; //relve year
 	tra_combo[1] = gtk_combo_box_text_new();
 	for (int year = currentYear - 10; year <= currentYear + 10; ++year) {
-		snprintf(yearStr, 5, "%d", year);
+		snprintf(yearStr, 20, "%d", year);
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(tra_combo[1]), yearStr);
 	}
 	currentYearIndex = currentYear - (currentYear - 10);
@@ -865,7 +837,6 @@ static void	track_part(GtkWidget *content_area) {
 	gtk_box_pack_start(GTK_BOX(tra_box), tra_button, TRUE, TRUE, 5);
 	gtk_container_add(GTK_CONTAINER(tra_frame[0]), tra_box);
 	gtk_container_add(GTK_CONTAINER(content_area), tra_frame[0]);
-
 	tra_frame[1] = gtk_frame_new("TICKET AGIOS");
 	gtk_frame_set_shadow_type(GTK_FRAME(tra_frame[1]), GTK_SHADOW_IN);
     gtk_container_set_border_width(GTK_CONTAINER(tra_frame[1]), 20);
@@ -889,8 +860,6 @@ static void	track_part(GtkWidget *content_area) {
         while (++j < 4) {
             if (i == 0)
                 gtk_grid_attach(GTK_GRID(grid), label[i][j], 1, 0, 2, 1);
-            // else if (i == 2 || i == 9)            
-            //     gtk_grid_attach(GTK_GRID(grid), label[i][j], j, i, 2, 1);
             else
                 gtk_grid_attach(GTK_GRID(grid), label[i][j], j, i, 1, 1);
         }
@@ -901,6 +870,7 @@ static void	track_part(GtkWidget *content_area) {
 
 // Mod part
 static void	on_mod_clicked(GtkButton *button, gpointer user_data) {
+	(void)button;
 	gpointer	selectedBq;
 	gpointer	selectedval;
 	sqlite3		*db;
@@ -924,15 +894,13 @@ static void	on_mod_clicked(GtkButton *button, gpointer user_data) {
 	if (!sqlite3_open(envlop.db_path, &db))
 	{
 
-		snprintf(buff, 500, "UPDATE %s_%s SET EDATE = '%d-%d-%d' WHERE EDATE > '%d-%d-%d';", mod_val, selectedBq, envlop.date.y, envlop.date.m, envlop.date.d, envlop.date.y, envlop.date.m, envlop.date.d);
-		// snprintf(buff, 500, "UPDATE %s_%s SET EDATE = date('now') WHERE EDATE > date('now');", mod_val, selectedBq);
+		snprintf(buff, 500, "UPDATE %s_%s SET EDATE = '%d-%d-%d' WHERE EDATE > '%d-%d-%d';", mod_val, (char *)selectedBq, envlop.date.y, envlop.date.m, envlop.date.d, envlop.date.y, envlop.date.m, envlop.date.d);
 		if (sqlite3_exec(db, buff, NULL, NULL, NULL) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
 			return ;
 		}
-		snprintf(buff, 500, "INSERT INTO %s_%s VALUES('%d-%d-%d', '%d-%d-%d', %d);", mod_val, selectedBq, envlop.date.y, envlop.date.m, envlop.date.d, envlop.date.y+100, envlop.date.m, envlop.date.d, value);
-		// snprintf(buff, 500, "INSERT INTO %s_%s VALUES(date('now'), date('now', '+100 year'), %d);", mod_val, selectedBq, value);
+		snprintf(buff, 500, "INSERT INTO %s_%s VALUES('%d-%d-%d', '%d-%d-%d', %d);", mod_val, (char *)selectedBq, envlop.date.y, envlop.date.m, envlop.date.d, envlop.date.y+100, envlop.date.m, envlop.date.d, value);
 		if (sqlite3_exec(db, buff, NULL, NULL, NULL) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
@@ -942,14 +910,11 @@ static void	on_mod_clicked(GtkButton *button, gpointer user_data) {
 	}
 }
 static void	mod_part(GtkWidget *content_area) {
-	GtkWidget	*mod_box;
 	GtkWidget	*mod_button;
-
 	GtkWidget	*grid;
 
 	mod_frame = gtk_frame_new("Modifier Line/Taux");
 	gtk_frame_set_label_align(GTK_FRAME(mod_frame), 0.5, 0.5);
-	
 	grid = gtk_grid_new();
 	gtk_grid_set_column_homogeneous(GTK_GRID(grid), TRUE);
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
@@ -957,40 +922,23 @@ static void	mod_part(GtkWidget *content_area) {
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
 	gtk_container_add(GTK_CONTAINER(mod_frame), grid);
 	gtk_container_add(GTK_CONTAINER(content_area), mod_frame);
-	
-	//mod_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	//gtk_box_set_homogeneous(GTK_BOX(mod_box), TRUE);
-	//gtk_grid_attach(GTK_GRID(grid), mod_box, 0, 0, 1, 1);
 	// modifiable value combo
 	mod_combo = gtk_combo_box_text_new();
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mod_combo), "Taux reg");
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mod_combo), "Taux pla");
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mod_combo), "Line");
 	gtk_grid_attach(GTK_GRID(grid), mod_combo, 0, 1, 1, 1);
-	// gtk_box_pack_start(GTK_BOX(mod_box), mod_combo, TRUE, TRUE, 5);
 	// new value
     GtkWidget *spin_button = gtk_spin_button_new(gtk_adjustment_new(0.0,
 			-G_MAXDOUBLE, G_MAXDOUBLE, 0.01, 0.1, 0.0), 0.01, 2);
-    // cloture_button = gtk_button_new_with_label("Cloturer");
-    // g_signal_connect(cloture_button, "clicked", G_CALLBACK(on_cloture_clicked), spin_button);
 	gtk_grid_attach(GTK_GRID(grid), spin_button, 0, 2, 1, 1);
-	// gtk_box_pack_start(GTK_BOX(mod_box), spin_button, TRUE, TRUE, 5);
 	// button
 	mod_button = gtk_button_new_with_label("Modifier");
 	g_signal_connect(mod_button, "clicked", G_CALLBACK(on_mod_clicked), spin_button);
 	gtk_grid_attach(GTK_GRID(grid), mod_button, 0, 3, 1, 1);
-	// gtk_box_pack_start(GTK_BOX(mod_box), mod_button, TRUE, TRUE, 5);
-	// gtk_container_add(GTK_CONTAINER(mod_frame), mod_box);
-	// gtk_container_add(GTK_CONTAINER(content_area), mod_frame);
-
-	// Date
-	// GtkWidget *mod_box2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	// gtk_box_set_homogeneous(GTK_BOX(mod_box2), TRUE);
 	GtkWidget	*date_label = gtk_label_new("Veuillez choisir la date");
 	GtkWidget	*date_widget = gtk_calendar_new();
 	g_signal_connect(date_widget, "day-selected", G_CALLBACK(on_calendar_date_selected), NULL);
-	// gtk_box_pack_start(GTK_BOX(mod_box2), date_label, TRUE, TRUE, 5);
-	// gtk_box_pack_start(GTK_BOX(mod_box2), date_widget, TRUE, TRUE, 5);
 	gtk_grid_attach(GTK_GRID(grid), date_label, 1, 0, 1, 1);
 	gtk_grid_attach(GTK_GRID(grid), date_widget, 1, 1, 1, 3);
 }
@@ -1034,16 +982,14 @@ int	main(int argc, char	**argv)
 	GtkWidget	*window;
 	GtkWidget	*box;
 
-	bzeros(envlop.wd, 100);
-	strncpy(envlop.wd, argv[0], strlen(argv[0]) - APPNAME);
-	bzeros(envlop.db_path, 200);
-    (strncpy(envlop.db_path, envlop.wd, strlen(envlop.wd)), strcat(envlop.db_path, "agio.db"));
-	// strncpy(wd, argv[0], strlen(argv[0]) - APPNAME);
+	envlop.bq = NULL;
+	(bzeros(envlop.wd, 500), strncpy(envlop.wd, argv[0], strlen(argv[0]) - APPNAME));
+	appdata = g_build_filename(g_get_user_data_dir(), "agio", NULL);
+	(bzeros(envlop.db_path, 500), strncpy(envlop.db_path, appdata, strlen(appdata)), strcat(envlop.db_path, "/agio.db"));
 	gtk_init(&argc, &argv);
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window), "Agio sur le découvert bancaire");
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
-	// gtk_window_set_default_size(GTK_WINDOW(window), 1200, 600);
 	gtk_window_maximize(GTK_WINDOW(window));
 	g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 	box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -1052,7 +998,7 @@ int	main(int argc, char	**argv)
 	gtk_box_pack_start(GTK_BOX(box), gtk_separator_new(GTK_ORIENTATION_VERTICAL), FALSE, FALSE, 10);
 	content_area_part(box);
 	gtk_widget_show_all(window);
-	// window	.maximize()
+	// window
 	gtk_widget_hide(bq_frame);
 	gtk_widget_hide(imp_frame[0]);
 	gtk_widget_hide(imp_frame[1]);

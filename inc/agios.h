@@ -10,6 +10,7 @@
 
 #ifdef  IMPORT_GUI_C
 #define APPNAME 5
+// #define APPNAME 8
 typedef struct  s_var
 {
     char    *file;
