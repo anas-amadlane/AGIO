@@ -111,23 +111,27 @@ static int	json_reader(char *file, char *bq, t_date *date) {
 	return rt;
 }
 
-static void	set_widget_color(const char *color) {
-	char	css[100];
-	bzeros(css, 100);
-
-	snprintf(css, 100, "button { background-color: %s; }", color);
-    GtkStyleContext *context = gtk_widget_get_style_context(provider.button);
-	provider.provider = gtk_css_provider_new();
-	gtk_css_provider_load_from_data(provider.provider, css, -1, NULL);
-	gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider.provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-}
-
 static void	remove_widget_color(void) {
     GtkStyleContext *context = gtk_widget_get_style_context(provider.button);
     if (provider.provider != NULL) {
         gtk_style_context_remove_provider(context, GTK_STYLE_PROVIDER(provider.provider));
         provider.provider = NULL;
     }
+}
+
+static void	set_widget_color(const char *color) {
+	char	css[100];
+
+	remove_widget_color();
+	bzeros(css, 100);
+	snprintf(css, 100, "button { color: %s; font-size: 16px; font-weight: bold; }", color);
+	provider.provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(provider.provider, css, -1, NULL);
+    gtk_style_context_add_provider(
+        gtk_widget_get_style_context(provider.button),
+        GTK_STYLE_PROVIDER(provider.provider),
+        GTK_STYLE_PROVIDER_PRIORITY_APPLICATION
+    );
 }
 
 // Sidebar GUI
@@ -181,12 +185,97 @@ static void	button_clicked(GtkWidget *widget, gpointer data)
 		gtk_widget_show(mod_frame);
 		gtk_widget_hide(bq_spec_frame);
 	}
+	else {
+		gtk_widget_show(bq_frame);
+		gtk_widget_hide(imp_frame[0]);
+		gtk_widget_hide(imp_frame[1]);
+		gtk_widget_hide(imp_frame[2]);
+		gtk_widget_hide(exp_frame);
+		gtk_widget_hide(tra_frame[0]);
+		gtk_widget_hide(tra_frame[1]);
+		gtk_widget_show(mod_frame);
+		gtk_widget_hide(bq_spec_frame);
+	}
+}
+
+
+GtkWidget	*site_logo[2];
+GtkWidget	*sidebar;
+
+	GtkWidget	*site_combo;
+	GtkWidget	*site_frame;
+
+static void	on_site_changed(GtkComboBox *combo_box, gpointer user_data) {
+	char	path[500];
+	gpointer combo;
+
+	combo = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(site_combo));
+	if (!combo)
+		return;
+	(bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/"), strcat(path, combo));
+	(bzeros(envlop.db_path, 500), strncpy(envlop.db_path, appdata, strlen(appdata)), strcat(envlop.db_path, "/agio_"), strcat(envlop.db_path, combo), strcat(envlop.db_path, ".db"));
+	printf("%s\n", envlop.db_path);
+	// gtk_container_add(GTK_CONTAINER(site_logo[0]), gtk_image_new_from_file(path));
+    gtk_image_set_from_file(GTK_IMAGE(site_logo[0]), path);
+    gtk_image_set_from_file(GTK_IMAGE(site_logo[1]), path);
+    // current_image_path = new_image_path;
+	free(combo);
+	gtk_widget_hide(site_frame);
+	gtk_widget_show(sidebar);
+}
+static void	button_clicki(GtkWidget *widget, gpointer data) {
+	gtk_widget_hide(bq_frame);
+	gtk_widget_hide(imp_frame[0]);
+	gtk_widget_hide(imp_frame[1]);
+	gtk_widget_hide(imp_frame[2]);
+	gtk_widget_hide(exp_frame);
+	gtk_widget_hide(tra_frame[0]);
+	gtk_widget_hide(tra_frame[1]);
+	gtk_widget_hide(mod_frame);
+	gtk_widget_hide(bq_spec_frame);
+	gtk_widget_hide(sidebar);
+	gtk_widget_show(site_frame);
+}
+
+static	void	site_part(GtkWidget *content_area) {
+	char		path[500];
+	// GtkWidget	*site_combo;
+	GtkWidget	*site_grid;
+	GtkWidget	*site_label;
+
+	(bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/logo.png"));
+	site_frame = gtk_frame_new("");
+	// gtk_widget_set_halign(site_frame, GTK_ALIGN_CENTER);
+	gtk_widget_set_valign(site_frame, GTK_ALIGN_CENTER);
+	site_grid = gtk_grid_new();
+	gtk_widget_set_halign(site_grid, GTK_ALIGN_CENTER);
+	// gtk_widget_set_valign(site_grid, GTK_ALIGN_CENTER);
+	// gtk_grid_set_row_homogeneous(GTK_GRID(site_grid), TRUE);
+	// gtk_grid_set_column_homogeneous(GTK_GRID(site_grid), TRUE);
+    gtk_grid_set_row_spacing(GTK_GRID(site_grid), 50);
+	gtk_container_add(GTK_CONTAINER(site_frame), site_grid);
+	gtk_container_add(GTK_CONTAINER(content_area), site_frame);
+	site_label = gtk_label_new("Veuillez choisir un site pour commencé");
+	gtk_grid_attach(GTK_GRID(site_grid), site_label, 0, 0, 1, 1);
+	site_logo[0] = gtk_image_new_from_file(path);
+	// site_logo[0] = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    // gtk_container_add(GTK_CONTAINER(site_logo), gtk_image_new_from_file(path));
+	gtk_grid_attach(GTK_GRID(site_grid), site_logo[0], 0, 1, 1, 1);
+	site_combo = gtk_combo_box_text_new();
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(site_combo), "Soremed");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(site_combo), "Lodimed");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(site_combo), "CPRE");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(site_combo), "GPM");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(site_combo), "GDIS");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(site_combo), "COPHADIS");
+	g_signal_connect(site_combo, "changed", G_CALLBACK(on_site_changed), NULL);
+	gtk_grid_attach(GTK_GRID(site_grid), site_combo, 0, 2, 1, 2);
 }
 
 static void	sidebar_part(GtkWidget *box) {
-	GtkWidget	*sidebar;
 	GtkWidget	*logo_box;
 	GtkWidget	*buttons_box;
+	GtkWidget	*sit_button;
 	GtkWidget	*imp_button;
 	GtkWidget	*exp_button;
 	GtkWidget	*tra_button;
@@ -200,14 +289,36 @@ static void	sidebar_part(GtkWidget *box) {
 	gtk_box_pack_start(GTK_BOX(box), sidebar, FALSE, FALSE, 0);
 	gtk_widget_set_valign(sidebar, GTK_ALIGN_CENTER);
 	// Sidebar header
+	// gtk_widget_set_halign(logo_box, GTK_ALIGN_CENTER);
+	// gtk_box_pack_start(GTK_BOX(logo_box), gtk_image_new_from_file(path), FALSE, FALSE, 0);
+
+	// logo_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	// GtkWidget *event_box = gtk_event_box_new();
+    // gtk_widget_add_events(event_box, GDK_BUTTON_PRESS_MASK);
+    // g_signal_connect(event_box, "button-press-event", G_CALLBACK(button_clicki), NULL);
+	// site_logo[1] = gtk_image_new_from_file(path);
+    // gtk_box_pack_start(GTK_BOX(event_box), site_logo[1], FALSE, FALSE, 0);
+    // gtk_box_pack_start(GTK_BOX(logo_box), event_box, FALSE, FALSE, 0);
+	// gtk_box_pack_start(GTK_BOX(sidebar), logo_box, FALSE, FALSE, 10);
+
 	logo_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	site_logo[1] = gtk_image_new_from_file(path);
+	gtk_box_pack_start(GTK_BOX(logo_box), site_logo[1], FALSE, FALSE, 10);
 	gtk_box_pack_start(GTK_BOX(sidebar), logo_box, FALSE, FALSE, 10);
-	gtk_widget_set_halign(logo_box, GTK_ALIGN_CENTER);
-	gtk_box_pack_start(GTK_BOX(logo_box), gtk_image_new_from_file(path), FALSE, FALSE, 0);
+
+	sit_button = gtk_button_new_with_label("Changer le Site");
+	g_signal_connect(sit_button, "clicked", G_CALLBACK(button_clicki), NULL);
+	gtk_box_pack_start(GTK_BOX(logo_box), sit_button, FALSE, FALSE, 5);
+
+
+    // gtk_container_add(GTK_CONTAINER(event_box), gtk_image_new_from_file(path));
+
 	// Header separator
 	gtk_box_pack_start(GTK_BOX(sidebar), gtk_separator_new(GTK_ORIENTATION_HORIZONTAL), FALSE, FALSE, 10);
 	// Buttons
 	buttons_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	// gtk_widget_set_hexpand(sidebar, TRUE); // Expand horizontally
+    // gtk_widget_set_vexpand(sidebar, TRUE);
 	gtk_box_pack_start(GTK_BOX(sidebar), buttons_box, FALSE, FALSE, 10);
 	gtk_widget_set_halign(buttons_box, GTK_ALIGN_CENTER);
 	imp_button = gtk_button_new_with_label("Importer");
@@ -974,6 +1085,7 @@ static void	content_area_part(GtkWidget *box) {
 	track_part(content_area);
 	mod_part(content_area);
 	bqspec_part(content_area);
+	site_part(content_area);
 }
 
 // Main
@@ -985,7 +1097,7 @@ int	main(int argc, char	**argv)
 	envlop.bq = NULL;
 	(bzeros(envlop.wd, 500), strncpy(envlop.wd, argv[0], strlen(argv[0]) - APPNAME));
 	appdata = g_build_filename(g_get_user_data_dir(), "agio", NULL);
-	(bzeros(envlop.db_path, 500), strncpy(envlop.db_path, appdata, strlen(appdata)), strcat(envlop.db_path, "/agio.db"));
+	// (bzeros(envlop.db_path, 500), strncpy(envlop.db_path, appdata, strlen(appdata)), strcat(envlop.db_path, "/agio.db"));
 	gtk_init(&argc, &argv);
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window), "Agio sur le découvert bancaire");
@@ -1008,6 +1120,7 @@ int	main(int argc, char	**argv)
 	gtk_widget_hide(tra_frame[0]);
 	gtk_widget_hide(tra_frame[1]);
 	gtk_widget_hide(bq_spec_frame);
+	gtk_widget_hide(sidebar);
 	gtk_main();
 	return (g_free(file_path), 0);
 }
