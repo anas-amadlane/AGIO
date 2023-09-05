@@ -226,6 +226,8 @@ static void	on_site_changed(GtkComboBox *combo_box, gpointer user_data) {
     gtk_image_set_from_file(GTK_IMAGE(site_logo[1]), path);
     // current_image_path = new_image_path;
 	free(combo);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(bq_combo), -1);
+	gtk_label_set_markup(GTK_LABEL(month_label), " ");
 	gtk_widget_hide(site_frame);
 	gtk_widget_show(sidebar);
 }
