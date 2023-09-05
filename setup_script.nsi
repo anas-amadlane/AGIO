@@ -41,12 +41,12 @@ Section
 
     SetOutPath "$LOCALAPPDATA\agio\data"
     File "data\logo\logo.png"
-    File "data\logo\COPHADIS.png"
-    File "data\logo\CPRE.png"
-    File "data\logo\GDIS.png"
-    File "data\logo\GPM.png"
-    File "data\logo\Lodimed.png"
-    File "data\logo\Soremed.png"
+    File "data\logo\COPHADIS"
+    File "data\logo\CPRE"
+    File "data\logo\GDIS"
+    File "data\logo\GPM"
+    File "data\logo\Lodimed"
+    File "data\logo\Soremed"
     File "data\module.json"
 
     SetOutPath "$INSTDIR"

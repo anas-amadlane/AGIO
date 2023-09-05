@@ -1,3 +1,4 @@
+#include <locale.h>
 #include <gtk/gtk.h>
 #include <sqlite3.h>
 #include <jansson.h>
@@ -56,6 +57,15 @@ GtkWidget	*bq_spin_button[4];
 const char	*appdata;
 t_envlop	envlop;
 t_date		date;
+
+
+char module_path[500];
+GtkWidget	*site_logo[2];
+GtkWidget	*sidebar;
+
+GtkWidget	*site_combo;
+GtkWidget	*site_frame;
+
 
 static void	bzeros(void * s, size_t n) {
 	memset(s, 0, n);
@@ -198,13 +208,6 @@ static void	button_clicked(GtkWidget *widget, gpointer data)
 	}
 }
 
-
-GtkWidget	*site_logo[2];
-GtkWidget	*sidebar;
-
-	GtkWidget	*site_combo;
-	GtkWidget	*site_frame;
-
 static void	on_site_changed(GtkComboBox *combo_box, gpointer user_data) {
 	char	path[500];
 	gpointer combo;
@@ -212,8 +215,9 @@ static void	on_site_changed(GtkComboBox *combo_box, gpointer user_data) {
 	combo = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(site_combo));
 	if (!combo)
 		return;
-	(bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/"), strcat(path, combo));
-	(bzeros(envlop.db_path, 500), strncpy(envlop.db_path, appdata, strlen(appdata)), strcat(envlop.db_path, "/agio_"), strcat(envlop.db_path, combo), strcat(envlop.db_path, ".db"));
+	(bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/"), strcat(path, combo), strcat(path, "/logo.png"));
+	(bzeros(envlop.db_path, 500), strncpy(envlop.db_path, appdata, strlen(appdata)), strcat(envlop.db_path, "/data/"), strcat(envlop.db_path, combo), strcat(envlop.db_path, "/agio.db"));
+	(bzeros(module_path, 500), strcat(module_path, appdata), strcat(module_path, "/data/"), strcat(module_path, combo), strcat(module_path, "/module.json"));
 	printf("%s\n", envlop.db_path);
 	// gtk_container_add(GTK_CONTAINER(site_logo[0]), gtk_image_new_from_file(path));
     gtk_image_set_from_file(GTK_IMAGE(site_logo[0]), path);
@@ -374,8 +378,8 @@ static void	save_clicked(GtkComboBox *combo_box, gpointer user_data) {
 			free(envlop.bq);
 		envlop.bq = (char *)selectedBq;
 		creater(&envlop, value);
-		(bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/module.json"));
-        json_writer(path, envlop.bq, &envlop.date);
+		// (bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/module.json"));
+        json_writer(module_path, envlop.bq, &envlop.date);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(bq_spin_button[0]), 0);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(bq_spin_button[1]), 0);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(bq_spin_button[2]), 0);
@@ -498,8 +502,8 @@ static void	on_combo_changed(GtkComboBox *combo_box, gpointer user_data) {
 		gtk_label_set_markup(GTK_LABEL(month_label), " ");
     }
 	else {
-		(bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/module.json"));
-		json_reader(path, selectedBq, &envlop.date);
+		// (bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/module.json"));
+		json_reader(module_path, selectedBq, &envlop.date);
 		snprintf(buff, 100, "<span font_size=\"15000\">%d/%d</span>", envlop.date.m, envlop.date.y);
 		gtk_label_set_markup(GTK_LABEL(month_label), buff);
 	}
@@ -546,14 +550,14 @@ static void	on_cloture_clicked(GtkButton *button, gpointer user_data) {
 					sqlite3_exec(db, buff, NULL, NULL, NULL);
 					(envlop.date.m = 1, envlop.date.y += 1);
 				}
-				json_writer(path, (char *)selectedBq, &envlop.date);
+				json_writer(module_path, (char *)selectedBq, &envlop.date);
 				gtk_spin_button_set_value(GTK_SPIN_BUTTON(user_data), 0.0);
 			}
 			sqlite3_finalize(stmt);
         }
 		sqlite3_close(db);
     }
-	json_reader(path, selectedBq, &envlop.date);
+	json_reader(module_path, selectedBq, &envlop.date);
 	snprintf(buff, 100, "<span font_size=\"15000\">%d/%d</span>", envlop.date.m, envlop.date.y);
 	gtk_label_set_markup(GTK_LABEL(month_label), buff);
 	g_free(selectedBq);
@@ -1099,6 +1103,7 @@ int	main(int argc, char	**argv)
 	appdata = g_build_filename(g_get_user_data_dir(), "agio", NULL);
 	// (bzeros(envlop.db_path, 500), strncpy(envlop.db_path, appdata, strlen(appdata)), strcat(envlop.db_path, "/agio.db"));
 	gtk_init(&argc, &argv);
+	setlocale(LC_NUMERIC, "C");
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window), "Agio sur le découvert bancaire");
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
