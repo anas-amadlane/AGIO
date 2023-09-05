@@ -209,6 +209,8 @@ static void	button_clicked(GtkWidget *widget, gpointer data)
 }
 
 static void	on_site_changed(GtkComboBox *combo_box, gpointer user_data) {
+	(void)combo_box;
+	(void)user_data;
 	char	path[500];
 	gpointer combo;
 
@@ -228,6 +230,8 @@ static void	on_site_changed(GtkComboBox *combo_box, gpointer user_data) {
 	gtk_widget_show(sidebar);
 }
 static void	button_clicki(GtkWidget *widget, gpointer data) {
+	(void)widget;
+	(void)data;
 	gtk_widget_hide(bq_frame);
 	gtk_widget_hide(imp_frame[0]);
 	gtk_widget_hide(imp_frame[1]);
@@ -481,7 +485,7 @@ static void	on_combo_changed(GtkComboBox *combo_box, gpointer user_data) {
 	(void)user_data;
 	gpointer	selectedBq;
 	char		buff[100];
-    char    path[500];
+    // char    path[500];
 
 	selectedBq = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(bq_combo));
 	if (!selectedBq)
@@ -1073,7 +1077,7 @@ static void	content_area_part(GtkWidget *box) {
 	bq_combo = gtk_combo_box_text_new();
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(bq_combo), "BP");
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(bq_combo), "CDM");
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(bq_combo), "BMCI");
+	// gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(bq_combo), "BMCI");
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(bq_combo), "BMCE");
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(bq_combo), "CIH");
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(bq_combo), "AWB");
