@@ -84,20 +84,14 @@ static char *trim_conv(t_var *vars, char *buff, char *s1) {
 static int init_db(sqlite3	*db, t_var *vars, char *trim, char *wd)
 {
 	char	buff[200];
-    char    path[200];
 
     if (!wd)
         return -1;
-    path[0] = '\0';
-    strcat(path, wd);
-    strcat(path, "agio.db");
-	if (!sqlite3_open(path, &db))
-	{
+
+    if (!sqlite3_open(wd, &db))
         return(get_trim(db, vars, trim_conv(vars, buff, trim)));
-	}
-	else
-		return (printf("error 1\n"), -1);
-	return 0;
+    else
+        return (fprintf(stderr, "error 1\n"), -1);
 }
 
 int init_export(t_var *vars, char *trim, char *wd) {

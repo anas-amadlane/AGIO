@@ -281,12 +281,12 @@ static int import_xlsx(t_var *vars, char *table) {
         return 1;
     workbook = xlsxioread_open(vars->file);
     if (!workbook)
-        return (printf("Error opening XLSX file.\n"), 1);
+        return (fprintf(stderr, "Error opening XLSX file.\n"), 1);
     sheet = xlsxioread_sheet_open(workbook, NULL, XLSXIOREAD_SKIP_EMPTY_ROWS);
     if (!sheet)
-        return (xlsxioread_close(workbook), printf("Error opening sheet in XLSX file.\n"), 1);
+        return (xlsxioread_close(workbook), fprintf(stderr, "Error opening sheet in XLSX file.\n"), 1);
     if (get_index_by_col(sheet, index))
-        return (xlsxioread_sheet_close(sheet), xlsxioread_close(workbook), printf("Incompatible table.\n"), 1);
+        return (xlsxioread_sheet_close(sheet), xlsxioread_close(workbook), fprintf(stderr, "Incompatible table.\n"), 1);
     if (get_rows(sheet, &query, index, table)) {
         xlsxioread_sheet_close(sheet);
         xlsxioread_close(workbook);

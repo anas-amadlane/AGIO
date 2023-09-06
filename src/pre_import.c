@@ -46,7 +46,7 @@ static int check_table(char *db_path, char *table, char *bq)
         sqlite3_close(db);
 	}
 	else
-        printf("error 1\n");
+        fprintf(stderr, "error 1\n");
     return rt;
 }
 
@@ -79,7 +79,7 @@ static int check_balance(char *db_path, char *bq)
         sqlite3_close(db);
 	}
 	else
-        printf("error 1\n");
+        fprintf(stderr, "error 1\n");
     return rt;
 }
 
@@ -102,7 +102,7 @@ static int insert_balance(char *db_path, char *bq, double value)
         sqlite3_close(db);
     }
 	else
-        printf("error 1\n");
+        fprintf(stderr, "error 1\n");
     return rt;
 }
 
@@ -113,16 +113,12 @@ static int create_table(t_envlop *envlop, char *table, double value) {
 
     if (!envlop || !table)
         return -1;
-    printf("%s,  %s,  %s,  %f\n", envlop->db_path, table, envlop->bq ,value);
     rt = 2;
     if (!sqlite3_open(envlop->db_path, &db)) {
         bzeros(buff, 200);
         snprintf(buff, 200, "DROP TABLE IF EXISTS %s_%s; CREATE TABLE IF NOT EXISTS %s_%s(SDATE DATE, EDATE DATE, TAUX DECIMAL);", table, envlop->bq, table, envlop->bq);
-        printf("%s\n", buff);
         if(sqlite3_exec(db, buff, NULL, NULL, NULL) == SQLITE_OK) {
-            //printf("%4d-%d-%d\n", envlop->date.y, envlop->date.m, envlop->date.d);
             snprintf(buff, 200, "INSERT INTO %s_%s VALUES('%d-%d-%d', '%d-%d-%d', %f);", table, envlop->bq, envlop->date.y, envlop->date.m, envlop->date.d, envlop->date.y + 100, envlop->date.m, envlop->date.d, value);
-            printf("%s\n", buff);
             if(sqlite3_exec(db, buff, NULL, NULL, NULL) == SQLITE_OK)
                 rt = 0;
             else
@@ -141,7 +137,6 @@ int checker(t_envlop *envlop) {
     int     i;
     char    *tab[4] = {"LINE", "TREG", "TPLA", NULL};
 
-    printf("%s\n", envlop->db_path);
     if (!envlop)
         return -1;
     if (check_balance(envlop->db_path, envlop->bq) == 1)

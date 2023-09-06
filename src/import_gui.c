@@ -220,7 +220,6 @@ static void	on_site_changed(GtkComboBox *combo_box, gpointer user_data) {
 	(bzeros(path, 500), strcat(path, appdata), strcat(path, "/data/"), strcat(path, combo), strcat(path, "/logo.png"));
 	(bzeros(envlop.db_path, 500), strncpy(envlop.db_path, appdata, strlen(appdata)), strcat(envlop.db_path, "/data/"), strcat(envlop.db_path, combo), strcat(envlop.db_path, "/agio.db"));
 	(bzeros(module_path, 500), strcat(module_path, appdata), strcat(module_path, "/data/"), strcat(module_path, combo), strcat(module_path, "/module.json"));
-	printf("%s\n", envlop.db_path);
 	// gtk_container_add(GTK_CONTAINER(site_logo[0]), gtk_image_new_from_file(path));
     gtk_image_set_from_file(GTK_IMAGE(site_logo[0]), path);
     gtk_image_set_from_file(GTK_IMAGE(site_logo[1]), path);
@@ -690,7 +689,7 @@ static void	on_export_clicked(GtkWidget *widget, gpointer data) {
 		vars.bq = (char *)selectedBq;
 		vars.year = atoi((char *)selectedYear);
 		trim = (char *)selectedtrim;
-		init_export(&vars, trim, envlop.wd);
+		init_export(&vars, trim, envlop.db_path);
 		g_free(vars.file);
 		g_free(selectedYear);
 		g_free(vars.bq);

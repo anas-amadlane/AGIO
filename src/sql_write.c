@@ -59,7 +59,7 @@ static int	gen_conc(sqlite3 *db, t_var *vars)
 	strcat(sqlStatement, ") SELECT date_range.S_DATE, COALESCE(tmp.S_DEBIT, 0) AS S_DEBIT, COALESCE(tmp.S_CREDIT, 0) AS S_CREDIT, (SELECT (SELECT SOLDE FROM BQ_SPEC WHERE BQ = '%s') + (SUM(COALESCE(tmp2.S_CREDIT, 0)) - SUM(COALESCE(tmp2.S_DEBIT, 0))) FROM tmp tmp2 WHERE tmp2.S_DATE <= date_range.S_DATE) AS BALANCE FROM date_range LEFT JOIN tmp ON tmp.S_DATE = date_range.S_DATE GROUP BY date_range.S_DATE ORDER BY date_range.S_DATE;\0");
 	snprintf(buff, 2000, sqlStatement, vars->bq);
 	if (sqlite3_exec(db, buff, NULL, 0, NULL))
-		return (printf("error 33\n"), sqlite3_finalize(stmt), 1);
+		return (fprintf(stderr, "error 33\n"), sqlite3_finalize(stmt), 1);
 	sqlite3_finalize(stmt);
     return 0;
 }
@@ -74,14 +74,14 @@ int init_db(const char *tab, const char *qu2, t_var *vars)
 	if (!sqlite3_open(envlop.db_path, &db))
 	{
 		if (sqlite3_exec(db, buff, NULL, 0, NULL))
-			return (printf("%s error 2\n", buff), 1);
+			return (fprintf(stderr, "%s error 2\n", buff), 1);
 		if (sqlite3_exec(db, qu2, NULL, 0, NULL))
-			return (printf("error 31\n"), 1);
+			return (fprintf(stderr, "error 31\n"), 1);
 		if (gen_conc(db, vars))
 			return (sqlite3_close(db), 1);
 		sqlite3_close(db);
 	}
 	else
-		return (printf("error 1\n"), 1);
+		return (fprintf(stderr, "error 1\n"), 1);
 	return 0;
 }
