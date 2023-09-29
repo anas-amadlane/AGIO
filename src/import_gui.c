@@ -534,27 +534,20 @@ static void	on_cloture_clicked(GtkButton *button, gpointer user_data) {
 	if (!sqlite3_open(envlop.db_path, &db))
 	{
 		bzeros(buff, 200);
-		if (envlop.date.m < 12) {
-			if (envlop.date.m < 10)
-				snprintf(buff, 200, "select balance from CONC_OP_%s_%d where S_DATE = date('%d-0%d-01', '-1 day');", (char *)selectedBq, envlop.date.y, envlop.date.y, envlop.date.m+1);
-			else
-				snprintf(buff, 200, "select balance from CONC_OP_%s_%d where S_DATE = date('%d-%d-01', '-1 day');", (char *)selectedBq, envlop.date.y, envlop.date.y, envlop.date.m+1);
-		}
-		else
-			snprintf(buff, 200, "select balance from CONC_OP_%s_%d where S_DATE = '%d-12-31';", (char *)selectedBq, envlop.date.y, envlop.date.y);
+		snprintf(buff, 200, "SELECT ((SELECT solde from BQ_SPEC WHERE bq='%s')+(sum(CREDIT)-sum(DEBIT))) FROM %s_%d_%d;", (char *)selectedBq, (char *)selectedBq, envlop.date.y, envlop.date.m);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK)
 			fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
         else if (sqlite3_step(stmt) == SQLITE_ROW) {
 			tableName = (char *)sqlite3_column_text(stmt, 0);
+			printf("%s,  %d\n", tableName, value);
             if (atoi(tableName) == value) {
+				bzeros(buff, 200);
+				snprintf(buff, 200, "UPDATE BQ_SPEC SET SOLDE = (SELECT ((SELECT solde from BQ_SPEC WHERE bq='%s')+(sum(CREDIT)-sum(DEBIT))) FROM %s_%d_%d) WHERE BQ = '%s';", (char *)selectedBq, (char *)selectedBq, envlop.date.y, envlop.date.m, (char *)selectedBq);
+				sqlite3_exec(db, buff, NULL, NULL, NULL);
 				if (envlop.date.m < 12)
 					envlop.date.m += 1;
-				else {
-					bzeros(buff, 200);
-					snprintf(buff, 200, "UPDATE BQ_SPEC SET SOLDE = (SELECT BALANCE FROM CONC_OP_%s_%d WHERE S_date = '%d-12-31') WHERE BQ = '%s';", (char *)selectedBq, envlop.date.y, envlop.date.y, (char *)selectedBq);
-					sqlite3_exec(db, buff, NULL, NULL, NULL);
+				else
 					(envlop.date.m = 1, envlop.date.y += 1);
-				}
 				json_writer(module_path, (char *)selectedBq, &envlop.date);
 				gtk_spin_button_set_value(GTK_SPIN_BUTTON(user_data), 0.0);
 			}
@@ -746,7 +739,7 @@ static void	export_part(GtkWidget *content_area) {
 #define TD2 " WHERE DATE BETWEEN '%s-04' AND '%s-07'"
 #define TD3 " WHERE DATE BETWEEN '%s-07' AND '%s-10'"
 #define TD4 " WHERE DATE BETWEEN '%s-10' AND '%s-12-31'"
-#define NB_DEB "CREATE VIEW IF NOT EXISTS NB_DEB_%s AS WITH NB_DEB_%s AS (SELECT DATE(S_DATE) AS DATE, CASE WHEN BALANCE >= 0 THEN BALANCE ELSE 0 END AS NB_CRE, CASE WHEN BALANCE >= 0 THEN 0 WHEN -1 * BALANCE <= (SELECT TAUX FROM LINE_%s WHERE EDATE>S_DATE) THEN -1 * BALANCE ELSE (SELECT TAUX FROM LINE_%s WHERE EDATE>S_DATE) END AS NB_DEB_REG, CASE WHEN BALANCE >= 0 THEN 0 WHEN -1 * BALANCE <= (SELECT TAUX FROM LINE_%s WHERE EDATE>S_DATE) THEN 0 ELSE -1 * BALANCE - (SELECT TAUX FROM LINE_%s WHERE EDATE>S_DATE) END AS NB_DEB_PLA FROM CONC_OP_%s_%s) SELECT DATE, NB_CRE, NB_DEB_REG, NB_DEB_PLA, ((NB_DEB_REG * (SELECT TAUX FROM TREG_%s WHERE EDATE>DATE)/100)/360 + (NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s WHERE EDATE>DATE)/100)/360) AS INTER FROM NB_DEB_%s;"
+#define NB_DEB "DROP VIEW IF EXISTS NB_DEB_%s ; CREATE VIEW IF NOT EXISTS NB_DEB_%s AS WITH NB_DEB_%s AS (SELECT DATE(S_DATE) AS DATE, CASE WHEN BALANCE >= 0 THEN BALANCE ELSE 0 END AS NB_CRE, CASE WHEN BALANCE >= 0 THEN 0 WHEN -1 * BALANCE <= (SELECT TAUX FROM LINE_%s WHERE EDATE>S_DATE) THEN -1 * BALANCE ELSE (SELECT TAUX FROM LINE_%s WHERE EDATE>S_DATE) END AS NB_DEB_REG, CASE WHEN BALANCE >= 0 THEN 0 WHEN -1 * BALANCE <= (SELECT TAUX FROM LINE_%s WHERE EDATE>S_DATE) THEN 0 ELSE -1 * BALANCE - (SELECT TAUX FROM LINE_%s WHERE EDATE>S_DATE) END AS NB_DEB_PLA FROM CONC_OP_%s_%s) SELECT DATE, NB_CRE, NB_DEB_REG, NB_DEB_PLA, ((NB_DEB_REG * (SELECT TAUX FROM TREG_%s WHERE EDATE>DATE)/100)/365 + (NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s WHERE EDATE>DATE)/100)/365) AS INTER FROM NB_DEB_%s;"
 
 static void on_track_clicked(GtkButton *button, gpointer user_data) {
 	(void)button;
@@ -767,6 +760,10 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
 	selectedBq = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(bq_combo));
 	selectedtrim = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(tra_combo[0]));
 	selectedYear = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(tra_combo[1]));
+	///
+	int rim = gtk_combo_box_get_active(GTK_COMBO_BOX(tra_combo[0]));
+	printf("%d\n", rim);
+	///
 	if (!selectedBq || !selectedYear || !selectedtrim)
 		return ;
 	if (!strcmp(selectedtrim, "1er trimestre"))
@@ -798,7 +795,7 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
 	if (!sqlite3_open(envlop.db_path, &db))
 	{
 		bzeros(buff, 2000);
-		snprintf(buff, 2000, NB_DEB, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedYear, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq);
+		snprintf(buff, 2000, NB_DEB, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, (char *)selectedYear, (char *)selectedBq, (char *)selectedBq, (char *)selectedBq);
 		sqlite3_exec(db, buff, NULL, NULL, NULL);
 		bzeros(buff, 2000);
 		snprintf(buff, 300, "select round(sum(NB_DEB_REG), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, dt_d);
@@ -846,7 +843,7 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
 			i++;
 		}
         gtk_label_set_text(GTK_LABEL(label[12][0]), "Autorisé           ");
-		snprintf(buff, 300, "select round(sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, (char *)selectedBq, dt_d);
+		snprintf(buff, 300, "select round(sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/365), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, (char *)selectedBq, dt_d);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
@@ -856,7 +853,7 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
         while (sqlite3_step(stmt) == SQLITE_ROW)
             gtk_label_set_text(GTK_LABEL(label[12][i++]), (char *)sqlite3_column_text(stmt, 0));
         gtk_label_set_text(GTK_LABEL(label[13][0]), "Dépassement      ");
-		snprintf(buff, 300, "select round(sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, (char *)selectedBq, dt_d);
+		snprintf(buff, 300, "select round(sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/365), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, (char *)selectedBq, dt_d);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
@@ -866,7 +863,7 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
         while (sqlite3_step(stmt) == SQLITE_ROW)
             gtk_label_set_text(GTK_LABEL(label[13][i++]), (char *)sqlite3_column_text(stmt, 0));
         gtk_label_set_text(GTK_LABEL(label[14][0]), "Total Intérêt     ");
-		snprintf(buff, 300, "select round(sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360) + sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, dt_d);
+		snprintf(buff, 300, "select round(sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/365) + sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/365), 1) from NB_DEB_%s %s group by strftime('%%m', date);", (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, dt_d);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
@@ -876,7 +873,7 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
         while (sqlite3_step(stmt) == SQLITE_ROW)
             gtk_label_set_text(GTK_LABEL(label[14][i++]), (char *)sqlite3_column_text(stmt, 0));
         gtk_label_set_text(GTK_LABEL(label[16][0]), "Intérêts calculés");
-		snprintf(buff, 300, "select round(sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360) + sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360), 1) from NB_DEB_%s %s;", (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, dt_d);
+		snprintf(buff, 300, "select round(sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/365) + sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/365), 1) from NB_DEB_%s %s;", (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, dt_d);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
@@ -890,7 +887,7 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
 		snprintf(buff, 300, "%d", value);
         gtk_label_set_text(GTK_LABEL(label[17][1]), buff);
         gtk_label_set_text(GTK_LABEL(label[18][0]), "Différence        ");
-		snprintf(buff, 300, "select round((sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360) + sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360))-%d, 1) from NB_DEB_%s %s;", (char *)selectedBq, (char *)selectedBq, value, (char *)selectedBq, dt_d);
+		snprintf(buff, 300, "select round((sum(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/365) + sum(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/365))-%d, 1) from NB_DEB_%s %s;", (char *)selectedBq, (char *)selectedBq, value, (char *)selectedBq, dt_d);
         if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
@@ -901,7 +898,7 @@ static void on_track_clicked(GtkButton *button, gpointer user_data) {
             gtk_label_set_text(GTK_LABEL(label[18][1]), buff);
         }
         gtk_label_set_text(GTK_LABEL(label[19][0]), "Taux Moyenne     ");
-		snprintf(buff, 300, "SELECT ROUND(((SUM(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/360) + SUM(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/360))/(SUM(NB_DEB_REG) + SUM(NB_DEB_PLA)))*360*100, 2) FROM NB_DEB_%s %s;", (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, dt_d);
+		snprintf(buff, 300, "SELECT ROUND(((SUM(NB_DEB_REG * (SELECT TAUX FROM TREG_%s)/100/365) + SUM(NB_DEB_PLA * (SELECT TAUX FROM TPLA_%s)/100/365))/(SUM(NB_DEB_REG) + SUM(NB_DEB_PLA)))*365*100, 2) FROM NB_DEB_%s %s;", (char *)selectedBq, (char *)selectedBq, (char *)selectedBq, dt_d);
 		if (sqlite3_prepare_v2(db, buff, -1, &stmt, 0) != SQLITE_OK) {
 			fprintf(stderr, "Failed to execute statement1: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);

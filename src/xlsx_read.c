@@ -3,7 +3,7 @@
 #include <string.h>
 
 #define MAX_ALLOC 10000
-#define HEADER {{"Date d'opération", "Date opération", "Date Opération", "DATE OPERATION", "Date de la transaction", "Date comptable", "DT opération", "Date opérati", "DATE OPER", "DATE", "Date", NULL}, {"Débit (DH)", "Débit", "DEBIT", " Montant débit", "Montant débit", "debit", "débit", "Vous avez séléctionné Montant de Débit", NULL}, {"Crédit (DH)", "Crédit", "CREDIT", " Montant crédit", "Montant crédit", "crédit", "credit", NULL}, {NULL}}
+#define HEADER {{"Date de valeur", "Date de Valeur", "date de valeur", "DATE DE VALEUR", "Date valeur", "Date Valeur", "date valeur", "DATE VALEUR", "Valeur", "valeur", "VALEUR", "DT valeur", "Date de paiement", "Date Val", NULL}, {"Débit (DH)", "Débit", "DEBIT", " Montant débit", "Montant débit", "debit", "débit", "Vous avez séléctionné Montant de Débit", NULL}, {"Crédit (DH)", "Crédit", "CREDIT", " Montant crédit", "Montant crédit", "crédit", "credit", NULL}, {NULL}}
 #define I_QUE "insert into %s values"
 
 typedef struct  s_var
@@ -176,7 +176,7 @@ static int pars_mnt(const char *s, char *ns) {
 
 static int comp_head(const char *val, int i) {
     int j;
-    char    *head[4][12] = HEADER;
+    char    *head[4][15] = HEADER;
     if (!val)
         return 1;
     j = -1;
